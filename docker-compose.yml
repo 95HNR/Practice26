@@ -1,0 +1,14 @@
+services:
+  my-frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+
+  my-backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npx nodemon app.js
