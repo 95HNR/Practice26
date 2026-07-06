@@ -12,9 +12,10 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 const app = express();
+
+// CORS engedélyezése, hogy a frontend (localhost:5173 vagy 127.0.0.1:5173) kommunikálhasson a backenddel
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'titkos_drivecheck_kulcs_2026';
 
@@ -54,20 +55,17 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) { res.status(500).json({ hiba: 'Szerverhiba.' }); }
 });
 
-// DINAMIKUS, DÁTUM-ALAPÚ FLOTTA LEKÉRDEZÉS
 app.get('/api/autok', authenticateToken, async (req, res) => {
   try {
-    const { form_date } = req.query; // A kliens által kiválasztott dátum az űrlapon
-    const today = new Date().toISOString().split('T')[0]; // A mai nap: 2026-07-06
+    const { form_date } = req.query;
+    const today = new Date().toISOString().split('T')[0];
     
-    // 1. Megnézzük, mely autók foglaltak MÁRA (a rács kinézetéhez)
     const todayApprovedUtak = await prisma.ut.findMany({
       where: { honap_ev: today, status: 'JOVAHAGYOTT' },
       select: { auto_rendszam: true }
     });
     const todayBusyPlates = todayApprovedUtak.map(u => u.auto_rendszam);
 
-    // 2. Megnézzük, mely autók foglaltak az ŰRLAPON KIVÁLASZTOTT napra
     let formBusyPlates = [];
     if (form_date) {
       const formApprovedUtak = await prisma.ut.findMany({
@@ -79,12 +77,11 @@ app.get('/api/autok', authenticateToken, async (req, res) => {
 
     const autok = await prisma.auto.findMany();
     
-    // Összefésüljük a naptári adatokat
     const dinamikusFlotta = autok.map(a => ({
       rendszam: a.rendszam,
       tipus: a.tipus,
-      statusz: todayBusyPlates.includes(a.rendszam) ? 'FOGLALT' : 'ELERHETO', // Csak akkor foglalt a kártya, ha MÁRA le van foglalva
-      elerhetoAFormDatumon: !formBusyPlates.includes(a.rendszam) // Szabad-e a kiválasztott napon
+      statusz: todayBusyPlates.includes(a.rendszam) ? 'FOGLALT' : 'ELERHETO',
+      elerhetoAFormDatumon: !formBusyPlates.includes(a.rendszam)
     }));
 
     res.json(dinamikusFlotta);
@@ -120,12 +117,7 @@ app.patch('/api/admin/utak/:id', authenticateToken, requireAdmin, async (req, re
   try {
     const id = parseInt(req.params.id);
     const { status } = req.body;
-    
-    // Frissítjük a kérelem státuszát
     const ut = await prisma.ut.update({ where: { id }, data: { status } });
-    
-    // FIGYELEM: KISZEDTÜK az auto.update-et! Az autó státusza most már tisztán naptár-alapú, nem írjuk felül globálisan a törzsadatot!
-    
     res.json({ üzenet: `Frissítve: ${status}`, ut });
   } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
 });

@@ -3,9 +3,12 @@ window.AppState = {
   user: null
 };
 
+// A backend szerver címe
+const API_BASE_URL = 'http://localhost:3000';
+
 const API = {
   async login(username, password) {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -14,8 +17,7 @@ const API = {
   },
 
   async fetchAutok(token, formDate) {
-    // Ha van megadva dátum, paraméterként fűzzük hozzá az URL-hez
-    const url = formDate ? `/api/autok?form_date=${formDate}` : '/api/autok';
+    const url = formDate ? `${API_BASE_URL}/api/autok?form_date=${formDate}` : `${API_BASE_URL}/api/autok`;
     const res = await fetch(url, { 
       headers: { 'Authorization': `Bearer ${token}` },
       cache: 'no-store'
@@ -24,7 +26,7 @@ const API = {
   },
 
   async fetchUtak(token, isAdmin) {
-    const endpoint = isAdmin ? '/api/admin/utak' : '/api/utak';
+    const endpoint = isAdmin ? `${API_BASE_URL}/api/admin/utak` : `${API_BASE_URL}/api/utak`;
     const res = await fetch(endpoint, { 
       headers: { 'Authorization': `Bearer ${token}` },
       cache: 'no-store'
@@ -33,7 +35,7 @@ const API = {
   },
 
   async addAuto(token, autoData) {
-    return fetch('/api/admin/autok', {
+    return fetch(`${API_BASE_URL}/api/admin/autok`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(autoData)
@@ -41,7 +43,7 @@ const API = {
   },
 
   async addUt(token, utData) {
-    return fetch('/api/utak', {
+    return fetch(`${API_BASE_URL}/api/utak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(utData)
@@ -49,7 +51,7 @@ const API = {
   },
 
   async biralUt(token, id, status) {
-    return fetch(`/api/admin/utak/${id}`, {
+    return fetch(`${API_BASE_URL}/api/admin/utak/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ status })
@@ -57,7 +59,7 @@ const API = {
   },
 
   async downloadCSV(token, honap) {
-    const res = await fetch(`/api/admin/jelentes/${honap}`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await fetch(`${API_BASE_URL}/api/admin/jelentes/${honap}`, { headers: { 'Authorization': `Bearer ${token}` } });
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

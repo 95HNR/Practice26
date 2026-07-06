@@ -133,14 +133,11 @@ async function loadAutok() {
   const token = window.AppState.token;
   if (!token) return;
   
-  // 1. Beolvassuk az űrlapból a kiválasztott dátumot
   const datumInput = document.getElementById('utDatum');
   const formDate = datumInput ? datumInput.value : new Date().toISOString().split('T')[0];
 
-  // Lekérjük a flotta státuszt a szerverről a kiválasztott dátummal szűrve
   const autok = await API.fetchAutok(token, formDate);
   
-  // 2. Kirajzoljuk a lenti flotta állapotot (Ez CSAK a mai nap foglaltságát mutatja a szerverről)
   document.getElementById('autoList').innerHTML = autok.map(a => `
     <div class="bg-slate-900 p-3 rounded border border-slate-700 flex justify-between items-center">
       <div>
@@ -151,7 +148,6 @@ async function loadAutok() {
     </div>
   `).join('');
 
-  // 3. DROPDOWN LISTA SZŰRÉSE (Csak az adott napon szabad autók!)
   const rendszamSelect = document.getElementById('utRendszam');
   if (rendszamSelect) {
     const elerhetoAutok = autok.filter(a => a.elerhetoAFormDatumon);
@@ -164,7 +160,6 @@ async function loadAutok() {
       opciok += elerhetoAutok.map(a => `<option value="${a.rendszam}">${a.rendszam} (${a.tipus})</option>`).join('');
     }
     
-    // Csak akkor írjuk felül a HTML-t ha változás történt, hogy ne akadályozzuk a kijelölést
     if (rendszamSelect.innerHTML !== opciok) {
       rendszamSelect.innerHTML = opciok;
       if (elerhetoAutok.some(a => a.rendszam === jelenlegiKivalasztott)) {
