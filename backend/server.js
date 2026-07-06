@@ -18,7 +18,6 @@ app.use(express.static('public'));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'titkos_drivecheck_kulcs_2026';
 
-// --- BIZTONSÁGI MIDDLEWARE-EK ---
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -32,63 +31,35 @@ function authenticateToken(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
-  if (req.user.role !== 'ADMIN') {
-    return res.status(403).json({ hiba: '403 Forbidden: Nincs adminisztrátori jogosultságod!' });
-  }
+  if (req.user.role !== 'ADMIN') return res.status(403).json({ hiba: '403 Forbidden!' });
   next();
 }
 
-// --- HITELESÍTÉS VÉGPONTOK ---
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, password, role } = req.body;
-    if (!username || !password) return res.status(400).json({ hiba: 'Kötelező adatok!' });
-
     const password_hash = await bcrypt.hash(password, 10);
-    const newUser = await prisma.user.create({
-      data: { username, password_hash, role: role || 'USER' }
-    });
-    res.status(201).json({ üzenet: 'Felhasználó sikeresen létrehozva!', userId: newUser.id });
-  } catch (error) {
-    res.status(400).json({ hiba: 'Ez a felhasználónév már létezik!' });
-  }
+    const newUser = await prisma.user.create({ data: { username, password_hash, role: role || 'USER' } });
+    res.status(201).json({ üzenet: 'Kész!', userId: newUser.id });
+  } catch (error) { res.status(400).json({ hiba: 'Létező név!' }); }
 });
 
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     const user = await prisma.user.findUnique({ where: { username } });
-
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-      return res.status(401).json({ hiba: 'Hibás felhasználónév vagy jelszó!' });
-    }
-
-    const tokenPayload = { id: user.id, username: user.username, role: user.role };
-    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '24h' });
-
-    res.json({
-      üzenet: 'Sikeres bejelentkezés!',
-      token: token,
-      user: { id: user.id, username: user.username, role: user.role }
-    });
-  } catch (error) {
-    res.status(500).json({ hiba: 'Szerverhiba bejelentkezéskor.' });
-  }
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) return res.status(401).json({ hiba: 'Hibás adatok!' });
+    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ üzenet: 'Belépve!', token, user: { id: user.id, username: user.username, role: user.role } });
+  } catch (error) { res.status(500).json({ hiba: 'Szerverhiba.' }); }
 });
 
-// --- SOFŐR VÉGPONTOK ---
 app.get('/api/autok', authenticateToken, async (req, res) => {
-  try {
-    const autok = await prisma.auto.findMany({ select: { rendszam: true, tipus: true, statusz: true } });
-    res.json(autok);
-  } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
+  try { res.json(await prisma.auto.findMany({ select: { rendszam: true, tipus: true, statusz: true } })); } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
 });
 
 app.get('/api/utak', authenticateToken, async (req, res) => {
-  try {
-    const utak = await prisma.ut.findMany({ where: { sofor_nev: req.user.username }, include: { auto: true } });
-    res.json(utak);
-  } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
+  try { res.json(await prisma.ut.findMany({ where: { sofor_nev: req.user.username }, include: { auto: true } })); } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
 });
 
 app.post('/api/utak', authenticateToken, async (req, res) => {
@@ -99,20 +70,15 @@ app.post('/api/utak', authenticateToken, async (req, res) => {
 
     const ujUt = await prisma.ut.create({
       data: {
-        sofor_nev: req.user.username,
-        auto_rendszam, indulas, erkezes,
-        tavolsag: parseFloat(tavolsag),
-        koltseg: parseFloat(koltseg || 0),
-        fogyasztas: parseFloat(fogyasztas),
-        honap_ev,
-        status: 'BEERKEZO'
+        sofor_nev: req.user.username, auto_rendszam, indulas, erkezes,
+        tavolsag: parseFloat(tavolsag), koltseg: parseFloat(koltseg || 0),
+        fogyasztas: parseFloat(fogyasztas), honap_ev, status: 'BEERKEZO'
       }
     });
     res.status(201).json(ujUt);
   } catch (error) { res.status(400).json({ hiba: 'Hiba az igény leadásakor.' }); }
 });
 
-// --- ADMIN VÉGPONTOK ---
 app.get('/api/admin/utak', authenticateToken, requireAdmin, async (req, res) => {
   try { res.json(await prisma.ut.findMany({ include: { auto: true } })); } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
 });
@@ -122,9 +88,7 @@ app.patch('/api/admin/utak/:id', authenticateToken, requireAdmin, async (req, re
     const id = parseInt(req.params.id);
     const { status } = req.body;
     const ut = await prisma.ut.update({ where: { id }, data: { status } });
-    if (status === 'JOVAHAGYOTT') {
-      await prisma.auto.update({ where: { rendszam: ut.auto_rendszam }, data: { statusz: 'FOGLALT' } });
-    }
+    if (status === 'JOVAHAGYOTT') await prisma.auto.update({ where: { rendszam: ut.auto_rendszam }, data: { statusz: 'FOGLALT' } });
     res.json({ üzenet: `Frissítve: ${status}`, ut });
   } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
 });
@@ -132,11 +96,27 @@ app.patch('/api/admin/utak/:id', authenticateToken, requireAdmin, async (req, re
 app.post('/api/admin/autok', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { rendszam, tipus, statusz, itp_lejart, utado_fizetve, szerviz_adatok } = req.body;
-    const ujAuto = await prisma.auto.create({
-      data: { rendszam, tipus, statusz: statusz || 'ELERHETO', itp_lejart, utado_fizetve, szerviz_adatok }
-    });
-    res.status(201).json(ujAuto);
+    res.status(201).json(await prisma.auto.create({ data: { rendszam, tipus, statusz: statusz || 'ELERHETO', itp_lejart, utado_fizetve, szerviz_adatok } }));
   } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
+});
+
+// CSV RUGALMAS DÁTUMKERESÉSSEL:
+app.get('/api/admin/jelentes/:honap', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const honap = req.params.honap; // Pl. "2026-07"
+    const utak = await prisma.ut.findMany({
+      where: { honap_ev: { startsWith: honap }, status: 'JOVAHAGYOTT' }
+    });
+
+    let csv = 'ID;Datum;Sofor;Rendszam;Indulas;Erkezes;Tavolsag(km);Koltseg(EUR);Fogyasztas(L)\n';
+    utak.forEach(u => {
+      csv += `${u.id};${u.honap_ev};${u.sofor_nev};${u.auto_rendszam};${u.indulas};${u.erkezes};${u.tavolsag};${u.koltseg};${u.fogyasztas}\n`;
+    });
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment(`DriveCheck_Jelentes_${honap}.csv`);
+    res.send(csv);
+  } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
 });
 
 const PORT = 3000;

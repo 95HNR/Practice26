@@ -1,9 +1,17 @@
-// Globális koordináta tárolók az utakhoz
 let startCoords = { lat: 0, lon: 0 };
 let endCoords = { lat: 0, lon: 0 };
 let debounceTimer = null;
 
-// Két koordináta közötti távolság km-ben (Haversine-formula)
+function resetDistanceField(resetStart = true, resetEnd = true) {
+  if (resetStart) startCoords = { lat: 0, lon: 0 };
+  if (resetEnd) endCoords = { lat: 0, lon: 0 };
+  const tavInput = document.getElementById('utTav');
+  if (tavInput) {
+    tavInput.value = '';
+    tavInput.classList.remove('border-emerald-500');
+  }
+}
+
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -15,9 +23,12 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return (R * c).toFixed(1);
 }
 
-// OpenStreetMap Nominatim kereső 800ms-os biztonsági késleltetéssel és User-Agenttel
 function searchOSM(inputEl, dropdownId) {
   clearTimeout(debounceTimer);
+  
+  if (inputEl.id === 'utIndulas') resetDistanceField(true, false);
+  if (inputEl.id === 'utErkezes') resetDistanceField(false, true);
+
   const query = inputEl.value.trim();
   const dropdown = document.getElementById(dropdownId);
 
@@ -74,7 +85,6 @@ function selectLocation(inputId, dropdownId, locationName, lat, lon) {
   }
 }
 
-// UI állapotok frissítése szerepkör alapján
 function renderUI() {
   if (!token) {
     document.getElementById('loginSection').classList.remove('hidden');
@@ -98,12 +108,21 @@ function renderUI() {
   }
 
   document.getElementById('kliensSection').classList.remove('hidden');
+  resetDistanceField(true, true);
+  
+  // Dátum mező automatikus beállítása a mai napra (ISO formátum: YYYY-MM-DD)
+  const datumInput = document.getElementById('utDatum');
+  if (datumInput && !datumInput.value) {
+    datumInput.value = new Date().toISOString().split('T')[0];
+  }
+  
   loadAutok();
   loadUtak();
 }
 
 async function loadAutok() {
   const autok = await API.fetchAutok(token);
+  
   document.getElementById('autoList').innerHTML = autok.map(a => `
     <div class="bg-slate-900 p-3 rounded border border-slate-700 flex justify-between items-center">
       <div>
@@ -113,6 +132,17 @@ async function loadAutok() {
       <span class="text-xs px-2 py-1 rounded font-bold ${a.statusz === 'ELERHETO' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-red-900/40 text-red-400'}">${a.statusz}</span>
     </div>
   `).join('');
+
+  const rendszamSelect = document.getElementById('utRendszam');
+  if (rendszamSelect) {
+    const elerhetoAutok = autok.filter(a => a.statusz === 'ELERHETO');
+    if (elerhetoAutok.length === 0) {
+      rendszamSelect.innerHTML = '<option value="">-- Nincs elérhető autó --</option>';
+    } else {
+      rendszamSelect.innerHTML = '<option value="">-- Válassz autót --</option>' + 
+        elerhetoAutok.map(a => `<option value="${a.rendszam}">${a.rendszam} (${a.tipus})</option>`).join('');
+    }
+  }
 }
 
 async function loadUtak() {
@@ -120,6 +150,7 @@ async function loadUtak() {
   document.getElementById('utList').innerHTML = utak.map(u => `
     <tr>
       <td class="py-3 text-slate-400">#${u.id}</td>
+      <td class="py-3 text-blue-400 font-mono text-xs font-semibold">${u.honap_ev}</td>
       <td class="py-3 font-bold text-white">${u.sofor_nev}</td>
       <td class="py-3"><span class="bg-slate-900 px-2 py-1 rounded text-xs">${u.auto_rendszam}</span></td>
       <td class="py-3 text-slate-300">${u.indulas} ➔ ${u.erkezes} (${u.tavolsag} km)</td>
@@ -141,7 +172,6 @@ async function loadUtak() {
   `).join('');
 }
 
-// Kattintásra bezárjuk a lenyíló listákat
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.relative')) {
     document.getElementById('indulasList')?.classList.add('hidden');

@@ -45,14 +45,16 @@ async function addUt(e) {
     erkezes: document.getElementById('utErkezes').value,
     tavolsag: document.getElementById('utTav').value,
     fogyasztas: 6.5,
-    honap_ev: '2026-07'
+    honap_ev: document.getElementById('utDatum').value // A KIVÁLASZTOTT DÁTUM!
   });
 
   e.target.reset();
-  document.getElementById('utTav').value = '';
-  document.getElementById('utTav').classList.remove('border-emerald-500');
-  startCoords = { lat: 0, lon: 0 };
-  endCoords = { lat: 0, lon: 0 };
+  resetDistanceField(true, true);
+  
+  // A mentés után újra beállítjuk a mai napot alapértelmezettnek
+  const datumInput = document.getElementById('utDatum');
+  if (datumInput) datumInput.value = new Date().toISOString().split('T')[0];
+  
   loadUtak();
 }
 
