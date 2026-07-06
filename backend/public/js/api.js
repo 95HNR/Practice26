@@ -1,4 +1,8 @@
-// Központi API hívások kezelése
+window.AppState = {
+  token: null,
+  user: null
+};
+
 const API = {
   async login(username, password) {
     const res = await fetch('/api/auth/login', {
@@ -9,14 +13,22 @@ const API = {
     return { ok: res.ok, data: await res.json() };
   },
 
-  async fetchAutok(token) {
-    const res = await fetch('/api/autok', { headers: { 'Authorization': `Bearer ${token}` } });
+  async fetchAutok(token, formDate) {
+    // Ha van megadva dátum, paraméterként fűzzük hozzá az URL-hez
+    const url = formDate ? `/api/autok?form_date=${formDate}` : '/api/autok';
+    const res = await fetch(url, { 
+      headers: { 'Authorization': `Bearer ${token}` },
+      cache: 'no-store'
+    });
     return res.json();
   },
 
   async fetchUtak(token, isAdmin) {
     const endpoint = isAdmin ? '/api/admin/utak' : '/api/utak';
-    const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await fetch(endpoint, { 
+      headers: { 'Authorization': `Bearer ${token}` },
+      cache: 'no-store'
+    });
     return res.json();
   },
 

@@ -54,8 +54,41 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) { res.status(500).json({ hiba: 'Szerverhiba.' }); }
 });
 
+// DINAMIKUS, DÁTUM-ALAPÚ FLOTTA LEKÉRDEZÉS
 app.get('/api/autok', authenticateToken, async (req, res) => {
-  try { res.json(await prisma.auto.findMany({ select: { rendszam: true, tipus: true, statusz: true } })); } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
+  try {
+    const { form_date } = req.query; // A kliens által kiválasztott dátum az űrlapon
+    const today = new Date().toISOString().split('T')[0]; // A mai nap: 2026-07-06
+    
+    // 1. Megnézzük, mely autók foglaltak MÁRA (a rács kinézetéhez)
+    const todayApprovedUtak = await prisma.ut.findMany({
+      where: { honap_ev: today, status: 'JOVAHAGYOTT' },
+      select: { auto_rendszam: true }
+    });
+    const todayBusyPlates = todayApprovedUtak.map(u => u.auto_rendszam);
+
+    // 2. Megnézzük, mely autók foglaltak az ŰRLAPON KIVÁLASZTOTT napra
+    let formBusyPlates = [];
+    if (form_date) {
+      const formApprovedUtak = await prisma.ut.findMany({
+        where: { honap_ev: form_date, status: 'JOVAHAGYOTT' },
+        select: { auto_rendszam: true }
+      });
+      formBusyPlates = formApprovedUtak.map(u => u.auto_rendszam);
+    }
+
+    const autok = await prisma.auto.findMany();
+    
+    // Összefésüljük a naptári adatokat
+    const dinamikusFlotta = autok.map(a => ({
+      rendszam: a.rendszam,
+      tipus: a.tipus,
+      statusz: todayBusyPlates.includes(a.rendszam) ? 'FOGLALT' : 'ELERHETO', // Csak akkor foglalt a kártya, ha MÁRA le van foglalva
+      elerhetoAFormDatumon: !formBusyPlates.includes(a.rendszam) // Szabad-e a kiválasztott napon
+    }));
+
+    res.json(dinamikusFlotta);
+  } catch (error) { res.status(500).json({ hiba: 'Hiba a flotta lekérdezésekor.' }); }
 });
 
 app.get('/api/utak', authenticateToken, async (req, res) => {
@@ -76,7 +109,7 @@ app.post('/api/utak', authenticateToken, async (req, res) => {
       }
     });
     res.status(201).json(ujUt);
-  } catch (error) { res.status(400).json({ hiba: 'Hiba az igény leadásakor.' }); }
+  } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
 });
 
 app.get('/api/admin/utak', authenticateToken, requireAdmin, async (req, res) => {
@@ -87,8 +120,12 @@ app.patch('/api/admin/utak/:id', authenticateToken, requireAdmin, async (req, re
   try {
     const id = parseInt(req.params.id);
     const { status } = req.body;
+    
+    // Frissítjük a kérelem státuszát
     const ut = await prisma.ut.update({ where: { id }, data: { status } });
-    if (status === 'JOVAHAGYOTT') await prisma.auto.update({ where: { rendszam: ut.auto_rendszam }, data: { statusz: 'FOGLALT' } });
+    
+    // FIGYELEM: KISZEDTÜK az auto.update-et! Az autó státusza most már tisztán naptár-alapú, nem írjuk felül globálisan a törzsadatot!
+    
     res.json({ üzenet: `Frissítve: ${status}`, ut });
   } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
 });
@@ -100,19 +137,14 @@ app.post('/api/admin/autok', authenticateToken, requireAdmin, async (req, res) =
   } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
 });
 
-// CSV RUGALMAS DÁTUMKERESÉSSEL:
 app.get('/api/admin/jelentes/:honap', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const honap = req.params.honap; // Pl. "2026-07"
-    const utak = await prisma.ut.findMany({
-      where: { honap_ev: { startsWith: honap }, status: 'JOVAHAGYOTT' }
-    });
-
+    const honap = req.params.honap;
+    const utak = await prisma.ut.findMany({ where: { honap_ev: { startsWith: honap }, status: 'JOVAHAGYOTT' } });
     let csv = 'ID;Datum;Sofor;Rendszam;Indulas;Erkezes;Tavolsag(km);Koltseg(EUR);Fogyasztas(L)\n';
     utak.forEach(u => {
       csv += `${u.id};${u.honap_ev};${u.sofor_nev};${u.auto_rendszam};${u.indulas};${u.erkezes};${u.tavolsag};${u.koltseg};${u.fogyasztas}\n`;
     });
-
     res.header('Content-Type', 'text/csv');
     res.attachment(`DriveCheck_Jelentes_${honap}.csv`);
     res.send(csv);

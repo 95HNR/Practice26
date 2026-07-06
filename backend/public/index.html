@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DriveCheck V2 - Moduláris Portál</title>
+  <title>DriveCheck V2 - Naptárvezérelt Portál</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     input::-webkit-outer-spin-button,
@@ -18,7 +18,7 @@
   <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
     <div class="flex items-center gap-2">
       <span class="text-2xl font-bold text-blue-500">🚗 DriveCheck V2</span>
-      <span class="text-xs bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded">Moduláris Architektúra</span>
+      <span class="text-xs bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded">Naptár-vezérelt</span>
     </div>
     <div id="userInfo" class="hidden flex items-center gap-4">
       <span id="welcomeText" class="text-sm"></span>
@@ -91,28 +91,25 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Fuvar Dátuma</label>
-            <input type="date" id="utDatum" required 
+            <input type="date" id="utDatum" required onchange="loadAutok()"
                    class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none transition cursor-pointer">
           </div>
           
           <div class="relative">
             <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Indulás (Honnan)</label>
-            <input type="text" id="utIndulas" placeholder="Kezdd el írni..." required autocomplete="off" oninput="searchOSM(this, 'indulasList')" 
-                   class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none transition">
+            <input type="text" id="utIndulas" placeholder="Kezdd el írni..." required autocomplete="off" oninput="searchOSM(this, 'indulasList')" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none transition">
             <div id="indulasList" class="absolute z-50 left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl hidden max-h-56 overflow-y-auto divide-y divide-slate-700"></div>
           </div>
 
           <div class="relative">
             <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Érkezés (Hová)</label>
-            <input type="text" id="utErkezes" placeholder="Kezdd el írni..." required autocomplete="off" oninput="searchOSM(this, 'erkezesList')" 
-                   class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none transition">
+            <input type="text" id="utErkezes" placeholder="Kezdd el írni..." required autocomplete="off" oninput="searchOSM(this, 'erkezesList')" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none transition">
             <div id="erkezesList" class="absolute z-50 left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl hidden max-h-56 overflow-y-auto divide-y divide-slate-700"></div>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Távolság (km)</label>
-            <input type="text" id="utTav" placeholder="Automatikus..." readonly 
-                   class="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-slate-400 cursor-not-allowed">
+            <input type="text" id="utTav" placeholder="Automatikus..." readonly class="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-slate-400 cursor-not-allowed">
           </div>
           
           <button type="submit" class="md:col-span-5 mt-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-lg transition shadow-lg shadow-blue-600/30">
@@ -122,7 +119,7 @@
       </div>
 
       <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-        <h4 class="font-semibold mb-4 text-lg">🚘 Flotta Állapota</h4>
+        <h4 class="font-semibold mb-4 text-lg">🚘 Flotta Állapota (MÁRA)</h4>
         <div id="autoList" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
       </div>
 

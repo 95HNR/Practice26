@@ -1,6 +1,7 @@
 let startCoords = { lat: 0, lon: 0 };
 let endCoords = { lat: 0, lon: 0 };
 let debounceTimer = null;
+let pollInterval = null;
 
 function resetDistanceField(resetStart = true, resetEnd = true) {
   if (resetStart) startCoords = { lat: 0, lon: 0 };
@@ -25,7 +26,6 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 function searchOSM(inputEl, dropdownId) {
   clearTimeout(debounceTimer);
-  
   if (inputEl.id === 'utIndulas') resetDistanceField(true, false);
   if (inputEl.id === 'utErkezes') resetDistanceField(false, true);
 
@@ -86,11 +86,15 @@ function selectLocation(inputId, dropdownId, locationName, lat, lon) {
 }
 
 function renderUI() {
+  const token = window.AppState.token;
+  const currentUser = window.AppState.user;
+
   if (!token) {
     document.getElementById('loginSection').classList.remove('hidden');
     document.getElementById('adminSection').classList.add('hidden');
     document.getElementById('kliensSection').classList.add('hidden');
     document.getElementById('userInfo').classList.add('hidden');
+    clearInterval(pollInterval);
     return;
   }
 
@@ -110,7 +114,6 @@ function renderUI() {
   document.getElementById('kliensSection').classList.remove('hidden');
   resetDistanceField(true, true);
   
-  // Dátum mező automatikus beállítása a mai napra (ISO formátum: YYYY-MM-DD)
   const datumInput = document.getElementById('utDatum');
   if (datumInput && !datumInput.value) {
     datumInput.value = new Date().toISOString().split('T')[0];
@@ -118,11 +121,26 @@ function renderUI() {
   
   loadAutok();
   loadUtak();
+
+  clearInterval(pollInterval);
+  pollInterval = setInterval(() => {
+    loadAutok();
+    loadUtak();
+  }, 5000);
 }
 
 async function loadAutok() {
-  const autok = await API.fetchAutok(token);
+  const token = window.AppState.token;
+  if (!token) return;
   
+  // 1. Beolvassuk az űrlapból a kiválasztott dátumot
+  const datumInput = document.getElementById('utDatum');
+  const formDate = datumInput ? datumInput.value : new Date().toISOString().split('T')[0];
+
+  // Lekérjük a flotta státuszt a szerverről a kiválasztott dátummal szűrve
+  const autok = await API.fetchAutok(token, formDate);
+  
+  // 2. Kirajzoljuk a lenti flotta állapotot (Ez CSAK a mai nap foglaltságát mutatja a szerverről)
   document.getElementById('autoList').innerHTML = autok.map(a => `
     <div class="bg-slate-900 p-3 rounded border border-slate-700 flex justify-between items-center">
       <div>
@@ -133,19 +151,34 @@ async function loadAutok() {
     </div>
   `).join('');
 
+  // 3. DROPDOWN LISTA SZŰRÉSE (Csak az adott napon szabad autók!)
   const rendszamSelect = document.getElementById('utRendszam');
   if (rendszamSelect) {
-    const elerhetoAutok = autok.filter(a => a.statusz === 'ELERHETO');
+    const elerhetoAutok = autok.filter(a => a.elerhetoAFormDatumon);
+    const jelenlegiKivalasztott = rendszamSelect.value;
+    
+    let opciok = '<option value="">-- Válassz autót --</option>';
     if (elerhetoAutok.length === 0) {
-      rendszamSelect.innerHTML = '<option value="">-- Nincs elérhető autó --</option>';
+      opciok = '<option value="">-- Nincs szabad autó ezen a napon --</option>';
     } else {
-      rendszamSelect.innerHTML = '<option value="">-- Válassz autót --</option>' + 
-        elerhetoAutok.map(a => `<option value="${a.rendszam}">${a.rendszam} (${a.tipus})</option>`).join('');
+      opciok += elerhetoAutok.map(a => `<option value="${a.rendszam}">${a.rendszam} (${a.tipus})</option>`).join('');
+    }
+    
+    // Csak akkor írjuk felül a HTML-t ha változás történt, hogy ne akadályozzuk a kijelölést
+    if (rendszamSelect.innerHTML !== opciok) {
+      rendszamSelect.innerHTML = opciok;
+      if (elerhetoAutok.some(a => a.rendszam === jelenlegiKivalasztott)) {
+        rendszamSelect.value = jelenlegiKivalasztott;
+      }
     }
   }
 }
 
 async function loadUtak() {
+  const token = window.AppState.token;
+  const currentUser = window.AppState.user;
+  if (!token || !currentUser) return;
+
   const utak = await API.fetchUtak(token, currentUser.role === 'ADMIN');
   document.getElementById('utList').innerHTML = utak.map(u => `
     <tr>
