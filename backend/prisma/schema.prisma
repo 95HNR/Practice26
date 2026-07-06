@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int    @id @default(autoincrement())
+  username      String @unique
+  password_hash String
+  role          String @default("USER")
+}
+
+model Auto {
+  rendszam       String  @id
+  tipus          String
+  statusz        String  @default("ELERHETO")
+  itp_lejart     String?
+  utado_fizetve  String?
+  szerviz_adatok String?
+  utak           Ut[]
+}
+
+model Ut {
+  id            Int    @id @default(autoincrement())
+  sofor_nev     String
+  auto_rendszam String
+  auto          Auto   @relation(fields: [auto_rendszam], references: [rendszam])
+  indulas       String
+  erkezes       String
+  tavolsag      Float
+  koltseg       Float
+  fogyasztas    Float
+  honap_ev      String
+  status        String @default("BEERKEZO")
+}
