@@ -3,23 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DriveCheck V2 - Portál</title>
+  <title>DriveCheck V2 - Moduláris Portál</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-  /* Eltünteti a nyilakat a number típusú inputokból */
-  input::-webkit-outer-spin-button,
-  input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-</style>
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
 
   <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
     <div class="flex items-center gap-2">
       <span class="text-2xl font-bold text-blue-500">🚗 DriveCheck V2</span>
-      <span class="text-xs bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded">OSM Címkeresővel</span>
+      <span class="text-xs bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded">Moduláris Architektúra</span>
     </div>
     <div id="userInfo" class="hidden flex items-center gap-4">
       <span id="welcomeText" class="text-sm"></span>
@@ -31,7 +30,7 @@
   <main class="max-w-6xl mx-auto p-6">
     
     <div id="loginSection" class="max-w-md mx-auto mt-12 bg-slate-800 p-8 rounded-xl border border-slate-700 shadow-2xl">
-      <h2 class="text-xl font-bold mb-6 text-center text-white">Bejelentkezés (JWT Auth)</h2>
+      <h2 class="text-xl font-bold mb-6 text-center text-white">Bejelentkezés</h2>
       <div id="loginError" class="hidden bg-red-500/20 border border-red-500 text-red-300 p-3 rounded text-sm mb-4 text-center"></div>
       <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
@@ -50,9 +49,9 @@
       <div class="bg-blue-900/30 border border-blue-500/30 p-4 rounded-lg flex justify-between items-center">
         <div>
           <h3 class="font-bold text-blue-400">🛡️ Flottafelelős (Admin) Kezelőpult</h3>
-          <p class="text-sm text-slate-300">Igények jóváhagyása, flotta kezelése és export.</p>
+          <p class="text-sm text-slate-300">Igények jóváhagyása és flotta exportálása.</p>
         </div>
-        <button onclick="downloadCSV('2026-07')" class="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded font-semibold flex items-center gap-2">
+        <button onclick="downloadCSV()" class="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded font-semibold">
           📥 Havi Jelentés (CSV)
         </button>
       </div>
@@ -60,13 +59,13 @@
       <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
         <h4 class="font-semibold mb-4 text-lg">➕ Új Autó Hozzáadása</h4>
         <form onsubmit="addAuto(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <input type="text" id="autoRendszam" placeholder="Rendszám (pl. B-99-TES)" required class="bg-slate-900 border border-slate-700 rounded p-2 text-white">
-          <input type="text" id="autoTipus" placeholder="Típus (pl. VW Golf)" required class="bg-slate-900 border border-slate-700 rounded p-2 text-white">
+          <input type="text" id="autoRendszam" placeholder="Rendszám" required class="bg-slate-900 border border-slate-700 rounded p-2 text-white">
+          <input type="text" id="autoTipus" placeholder="Típus" required class="bg-slate-900 border border-slate-700 rounded p-2 text-white">
           <select id="autoStatusz" class="bg-slate-900 border border-slate-700 rounded p-2 text-white">
             <option value="ELERHETO">ELÉRHETŐ</option>
             <option value="FOGLALT">FOGLALT</option>
           </select>
-          <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 rounded">Flottához adás</button>
+          <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 rounded">Mentés</button>
         </form>
       </div>
     </div>
@@ -74,33 +73,26 @@
     <div id="kliensSection" class="hidden space-y-6 mt-6">
       <div id="kliensHeader" class="bg-emerald-900/30 border border-emerald-500/30 p-4 rounded-lg">
         <h3 class="font-bold text-emerald-400">👤 Sofőr Igénylő Felület</h3>
-        <p class="text-sm text-slate-300">Itt adhatod le az igényedet az elérhető autókra. Kezdd el írni a várost vagy utcát!</p>
+        <p class="text-sm text-slate-300">Válassz kiindulási és érkezési helyszínt az OSM listából.</p>
       </div>
 
       <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
         <h4 class="font-semibold mb-4 text-lg">✍️ Új Fuvarigény Leadása</h4>
         <form onsubmit="addUt(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <input type="text" id="utRendszam" placeholder="Autó Rendszáma" required autocomplete="off" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
-          </div>
+          <input type="text" id="utRendszam" placeholder="Autó Rendszáma" required autocomplete="off" class="bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
           
           <div class="relative">
-            <input type="text" id="utIndulas" placeholder="Honnan (pl. Kolozsvár)" required autocomplete="off" 
-                   oninput="searchOSM(this, 'indulasList')"
-                   class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none">
+            <input type="text" id="utIndulas" placeholder="Honnan" required autocomplete="off" oninput="searchOSM(this, 'indulasList')" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none">
             <div id="indulasList" class="absolute z-50 left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl hidden max-h-56 overflow-y-auto divide-y divide-slate-700"></div>
           </div>
 
           <div class="relative">
-            <input type="text" id="utErkezes" placeholder="Hová (pl. Brassó)" required autocomplete="off" 
-                   oninput="searchOSM(this, 'erkezesList')"
-                   class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none">
+            <input type="text" id="utErkezes" placeholder="Hová" required autocomplete="off" oninput="searchOSM(this, 'erkezesList')" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none">
             <div id="erkezesList" class="absolute z-50 left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl hidden max-h-56 overflow-y-auto divide-y divide-slate-700"></div>
           </div>
 
-          <div>
-            <input type="text" id="utTav" placeholder="Távolság (km)" readonly 
-                    class="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-slate-400 cursor-not-allowed"> </div>
+          <input type="text" id="utTav" placeholder="Távolság (km)" readonly class="bg-slate-950 border border-slate-700 rounded p-2.5 text-slate-400 cursor-not-allowed">
+          
           <button type="submit" class="md:col-span-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded transition shadow-lg shadow-blue-600/30">Igény Benyújtása</button>
         </form>
       </div>
@@ -121,7 +113,7 @@
                 <th class="py-2">Autó</th>
                 <th class="py-2">Útvonal</th>
                 <th class="py-2">Státusz</th>
-                <th class="py-2">Művelet (Csak Admin)</th>
+                <th class="py-2">Művelet</th>
               </tr>
             </thead>
             <tbody id="utList" class="divide-y divide-slate-700 text-sm"></tbody>
@@ -132,261 +124,8 @@
 
   </main>
 
-  <script>
-    let token = null;
-    let currentUser = null;
-    let debounceTimer = null;
-
-    // --- OPENSTREETMAP NOMINATIM KERESŐ ---
-    function searchOSM(inputEl, dropdownId) {
-      clearTimeout(debounceTimer);
-      const query = inputEl.value.trim();
-      const dropdown = document.getElementById(dropdownId);
-
-      // 3 karakternél kevesebbre nem keresünk
-      if (query.length < 3) {
-        dropdown.classList.add('hidden');
-        return;
-      }
-
-      // 600ms késleltetés a biztonságos használat érdekében
-      debounceTimer = setTimeout(async () => {
-        try {
-          // Egyedi User-Agent hozzáadása a szabályzat betartása miatt
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=hu`, {
-            headers: {
-              'User-Agent': 'DriveCheckApp/1.0 (hunor-university-project)'
-            }
-          });
-          const results = await res.json();
-
-          if (results.length === 0) {
-            dropdown.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Nincs találat</div>`;
-            dropdown.classList.remove('hidden');
-            return;
-          }
-
-          dropdown.innerHTML = results.map(item => {
-            const shortName = item.display_name.split(',').slice(0, 3).join(', ').trim();
-            const safeName = shortName.replace(/'/g, "\\'");
-            return `
-              <div onclick="selectLocation('${inputEl.id}', '${dropdownId}', '${safeName}', ${item.lat}, ${item.lon})" ... >
-                <span class="text-blue-400 mt-0.5">📍</span>
-                <div>
-                  <div class="text-xs font-semibold text-white">${shortName}</div>
-                  <div class="text-[10px] text-slate-400 truncate max-w-xs">${item.display_name}</div>
-                </div>
-              </div>
-            `;
-          }).join('');
-          dropdown.classList.remove('hidden');
-        } catch (err) {
-          console.error('OSM hiba:', err);
-        }
-      }, 600);
-    }
-
-    // Tároljuk a koordinátákat
-    let startCoords = { lat: 0, lon: 0 };
-    let endCoords = { lat: 0, lon: 0 };
-
-    function selectLocation(inputId, dropdownId, locationName, lat, lon) {
-      document.getElementById(inputId).value = locationName;
-      document.getElementById(dropdownId).classList.add('hidden');
-
-      if (inputId === 'utIndulas') startCoords = { lat, lon };
-      if (inputId === 'utErkezes') endCoords = { lat, lon };
-
-      // Ha mindkettő megvan, számoljunk távolságot
-      if (startCoords.lat !== 0 && endCoords.lat !== 0) {
-        const dist = calculateDistance(startCoords.lat, startCoords.lon, endCoords.lat, endCoords.lon);
-        document.getElementById('utTav').value = dist;
-  }
-}
-
-    // Két koordináta közötti távolság km-ben (Haversine-formula)
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371; // Föld sugara km-ben
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return (R * c).toFixed(1); // 1 tizedesjegyre kerekítve
-}
-
-    // Ha kattintunk az oldalon valahova, bezárjuk a javaslatok listáját
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.relative')) {
-        document.getElementById('indulasList')?.classList.add('hidden');
-        document.getElementById('erkezesList')?.classList.add('hidden');
-      }
-    });
-
-    // --- LOGIKA ÉS HITELESÍTÉS ---
-    async function handleLogin(e) {
-      e.preventDefault();
-      const errorDiv = document.getElementById('loginError');
-
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: document.getElementById('username').value,
-            password: document.getElementById('password').value
-          })
-        });
-        const data = await res.json();
-
-        if (res.ok) {
-          token = data.token;
-          currentUser = data.user;
-          errorDiv.classList.add('hidden');
-          renderUI();
-        } else {
-          errorDiv.textContent = data.hiba || 'Hibás adatok!';
-          errorDiv.classList.remove('hidden');
-        }
-      } catch (err) {
-        errorDiv.textContent = 'Hiba a szerverkapcsolatban.';
-        errorDiv.classList.remove('hidden');
-      }
-    }
-
-    function logout() {
-      token = null; currentUser = null;
-      renderUI();
-    }
-
-    function renderUI() {
-      if (!token) {
-        document.getElementById('loginSection').classList.remove('hidden');
-        document.getElementById('adminSection').classList.add('hidden');
-        document.getElementById('kliensSection').classList.add('hidden');
-        document.getElementById('userInfo').classList.add('hidden');
-        return;
-      }
-
-      document.getElementById('loginSection').classList.add('hidden');
-      document.getElementById('userInfo').classList.remove('hidden');
-      document.getElementById('welcomeText').textContent = `Üdv, ${currentUser.username}!`;
-      document.getElementById('roleBadge').textContent = currentUser.role;
-
-      if (currentUser.role === 'ADMIN') {
-        document.getElementById('adminSection').classList.remove('hidden');
-        document.getElementById('kliensHeader').classList.add('hidden');
-      } else {
-        document.getElementById('adminSection').classList.add('hidden');
-        document.getElementById('kliensHeader').classList.remove('hidden');
-      }
-
-      document.getElementById('kliensSection').classList.remove('hidden');
-      loadAutok();
-      loadUtak();
-    }
-
-    async function loadAutok() {
-      const res = await fetch('/api/autok', { headers: { 'Authorization': `Bearer ${token}` } });
-      const autok = await res.json();
-      document.getElementById('autoList').innerHTML = autok.map(a => `
-        <div class="bg-slate-900 p-3 rounded border border-slate-700 flex justify-between items-center">
-          <div>
-            <div class="font-bold text-white">${a.rendszam}</div>
-            <div class="text-xs text-slate-400">${a.tipus}</div>
-          </div>
-          <span class="text-xs px-2 py-1 rounded font-bold ${a.statusz === 'ELERHETO' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-red-900/40 text-red-400'}">${a.statusz}</span>
-        </div>
-      `).join('');
-    }
-
-    async function loadUtak() {
-      const endpoint = currentUser.role === 'ADMIN' ? '/api/admin/utak' : '/api/utak';
-      const res = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${token}` } });
-      const utak = await res.json();
-      document.getElementById('utList').innerHTML = utak.map(u => `
-        <tr>
-          <td class="py-3 text-slate-400">#${u.id}</td>
-          <td class="py-3 font-bold text-white">${u.sofor_nev}</td>
-          <td class="py-3"><span class="bg-slate-900 px-2 py-1 rounded text-xs">${u.auto_rendszam}</span></td>
-          <td class="py-3 text-slate-300">${u.indulas} ➔ ${u.erkezes} (${u.tavolsag} km)</td>
-          <td class="py-3">
-            <span class="text-xs px-2 py-1 rounded font-bold ${
-              u.status === 'JOVAHAGYOTT' ? 'bg-emerald-900/50 text-emerald-400 border border-emerald-500/30' :
-              u.status === 'ELUTASITOTT' ? 'bg-red-900/50 text-red-400 border border-red-500/30' : 'bg-amber-900/50 text-amber-400 border border-amber-500/30'
-            }">${u.status}</span>
-          </td>
-          <td class="py-3">
-            ${currentUser.role === 'ADMIN' && u.status === 'BEERKEZO' ? `
-              <div class="flex gap-2">
-                <button onclick="biralUt(${u.id}, 'JOVAHAGYOTT')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded text-xs">✔ Jóváhagyás</button>
-                <button onclick="biralUt(${u.id}, 'ELUTASITOTT')" class="bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded text-xs">✖ Elutasítás</button>
-              </div>
-            ` : '-'}
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    async function addAuto(e) {
-      e.preventDefault();
-      await fetch('/api/admin/autok', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          rendszam: document.getElementById('autoRendszam').value,
-          tipus: document.getElementById('autoTipus').value,
-          statusz: document.getElementById('autoStatusz').value
-        })
-      });
-      e.target.reset(); loadAutok();
-    }
-
-    async function addUt(e) {
-      e.preventDefault();
-      await fetch('/api/utak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          auto_rendszam: document.getElementById('utRendszam').value,
-          indulas: document.getElementById('utIndulas').value,
-          erkezes: document.getElementById('utErkezes').value,
-          tavolsag: document.getElementById('utTav').value,
-          fogyasztas: 6.5, honap_ev: '2026-07'
-        })
-      });
-
-      // 1. Reseteljük az űrlapot
-      e.target.reset(); 
-      
-      // 2. Kifejezetten ürítsük ki a távolság mezőt
-      document.getElementById('utTav').value = ''; 
-      document.getElementById('utTav').classList.remove('border-emerald-500');
-      
-      // 3. Reseteljük a koordináta tárolókat is, hogy ne keverje be az újat
-      startCoords = { lat: 0, lon: 0 };
-      endCoords = { lat: 0, lon: 0 };
-      
-      loadUtak();
-    }
-
-    async function biralUt(id, status) {
-      await fetch(`/api/admin/utak/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ status })
-      });
-      loadAutok(); loadUtak();
-    }
-
-    async function downloadCSV(honap) {
-      const res = await fetch(`/api/admin/jelentes/${honap}`, { headers: { 'Authorization': `Bearer ${token}` } });
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `Jelentes_${honap}.csv`;
-      document.body.appendChild(a); a.click(); a.remove();
-    }
-  </script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
 </body>
 </html>
