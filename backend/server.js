@@ -6,22 +6,37 @@ const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { PrismaClient } = require('@prisma/client');
+const nodemailer = require('nodemailer');
+// ÚJ: HTTP és Socket.io importálása
+const http = require('http');
+const { Server } = require('socket.io');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ÚJ: Socket.io szerver létrehozása
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+
 const JWT_SECRET = process.env.JWT_SECRET || 'titkos_drivecheck_kulcs_2026';
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.ethereal.email',
+  port: 587,
+  auth: { user: process.env.EMAIL_USER || 'dummy', pass: process.env.EMAIL_PASS || 'dummy' }
+});
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ hiba: 'Hiányzó hitelesítési token!' });
+  if (!token) return res.status(401).json({ hiba: 'Hiányzó token!' });
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ hiba: 'Érvénytelen vagy lejárt token!' });
+    if (err) return res.status(403).json({ hiba: 'Érvénytelen token!' });
     req.user = user; next();
   });
 }
@@ -61,11 +76,12 @@ app.get('/api/admin/riasztasok', authenticateToken, requireAdmin, async (req, re
       if (auto.utado_lejarat && auto.utado_lejarat < ma) lejaratok.push('Rovinieta');
       if (lejaratok.length > 0) {
         if (auto.statusz === 'ELERHETO') await prisma.auto.update({ where: { rendszam: auto.rendszam }, data: { statusz: 'FOGLALT' } });
-        riasztasok.push(`🚨 FIGYELEM! A(z) ${auto.rendszam} (${auto.tipus}) dokumentumai lejártak: ${lejaratok.join(', ')}. Az autó letiltva!`);
+        riasztasok.push(`🚨 FIGYELEM! A(z) ${auto.rendszam} dokumentumai lejártak: ${lejaratok.join(', ')}.`);
       }
     }
+    if(riasztasok.length > 0) console.log('📧 Email riasztás generálva!');
     res.json(riasztasok);
-  } catch (error) { res.status(500).json({ hiba: 'Hiba a riasztások feldolgozásakor.' }); }
+  } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
 });
 
 app.get('/api/autok', authenticateToken, async (req, res) => {
@@ -83,79 +99,119 @@ app.get('/api/autok', authenticateToken, async (req, res) => {
     const dinamikusFlotta = autok.map(a => ({
       rendszam: a.rendszam, tipus: a.tipus, statusz: todayBusyPlates.includes(a.rendszam) ? 'FOGLALT' : a.statusz,
       elerhetoAFormDatumon: !formBusyPlates.includes(a.rendszam) && a.statusz === 'ELERHETO',
-      itp: a.itp_lejarat, rca: a.biztositas_lejarat, rovinieta: a.utado_lejarat, szerviz: a.szerviz_naplo
+      itp: a.itp_lejarat, rca: a.biztositas_lejarat, rovinieta: a.utado_lejarat
     }));
     res.json(dinamikusFlotta);
-  } catch (error) { res.status(500).json({ hiba: 'Hiba a flotta lekérdezésekor.' }); }
+  } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
 });
 
-// -- ÚJ: AUTÓ TÖRLÉSE --
+app.get('/api/admin/aktiv-flotta', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    res.json(await prisma.ut.findMany({ where: { honap_ev: today, status: 'JOVAHAGYOTT' }, include: { auto: true } }));
+  } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
+});
+
 app.delete('/api/admin/autok/:rendszam', authenticateToken, requireAdmin, async (req, res) => {
   try {
     await prisma.auto.delete({ where: { rendszam: req.params.rendszam } });
-    res.json({ üzenet: 'Autó sikeresen törölve!' });
-  } catch (error) { 
-    res.status(400).json({ hiba: 'Nem törölhető! Valószínűleg már tartozik hozzá fuvar előzmény. Ehelyett állítsd "FOGLALT" státuszra!' }); 
-  }
+    io.emit('adat_frissites'); // ÚJ
+    res.json({ üzenet: 'Törölve!' });
+  } catch (error) { res.status(400).json({ hiba: 'Nem törölhető!' }); }
 });
 
-// -- ÚJ: AUTÓ MÓDOSÍTÁSA --
 app.patch('/api/admin/autok/:rendszam', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { tipus, statusz, itp_lejarat, biztositas_lejarat, utado_lejarat, szerviz_naplo } = req.body;
+    const { tipus, statusz, itp_lejarat, biztositas_lejarat, utado_lejarat } = req.body;
     const frissitett = await prisma.auto.update({
       where: { rendszam: req.params.rendszam },
-      data: {
-        tipus, statusz, szerviz_naplo,
-        itp_lejarat: itp_lejarat ? new Date(itp_lejarat) : null,
-        biztositas_lejarat: biztositas_lejarat ? new Date(biztositas_lejarat) : null,
-        utado_lejarat: utado_lejarat ? new Date(utado_lejarat) : null
-      }
+      data: { tipus, statusz, itp_lejarat: itp_lejarat ? new Date(itp_lejarat) : null, biztositas_lejarat: biztositas_lejarat ? new Date(biztositas_lejarat) : null, utado_lejarat: utado_lejarat ? new Date(utado_lejarat) : null }
     });
+    io.emit('adat_frissites'); // ÚJ
     res.json(frissitett);
-  } catch (error) { res.status(400).json({ hiba: 'Hiba az autó módosításakor.' }); }
+  } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
 });
 
 app.post('/api/admin/autok', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { rendszam, tipus, statusz, itp_lejarat, biztositas_lejarat, utado_lejarat, szerviz_naplo } = req.body;
+    const { rendszam, tipus, statusz, itp_lejarat, biztositas_lejarat, utado_lejarat } = req.body;
     const ujAuto = await prisma.auto.create({
-      data: { rendszam, tipus, statusz: statusz || 'ELERHETO', szerviz_naplo,
-        itp_lejarat: itp_lejarat ? new Date(itp_lejarat) : null, biztositas_lejarat: biztositas_lejarat ? new Date(biztositas_lejarat) : null, utado_lejarat: utado_lejarat ? new Date(utado_lejarat) : null
-      }
+      data: { rendszam, tipus, statusz: statusz || 'ELERHETO', itp_lejarat: itp_lejarat ? new Date(itp_lejarat) : null, biztositas_lejarat: biztositas_lejarat ? new Date(biztositas_lejarat) : null, utado_lejarat: utado_lejarat ? new Date(utado_lejarat) : null }
     });
+    io.emit('adat_frissites'); // ÚJ
     res.status(201).json(ujAuto);
-  } catch (error) { res.status(400).json({ hiba: 'Ez a rendszám már létezik!' }); }
+  } catch (error) { res.status(400).json({ hiba: 'Létezik!' }); }
+});
+
+app.get('/api/admin/szerviz/:rendszam', authenticateToken, requireAdmin, async (req, res) => {
+  try { res.json(await prisma.szerviz.findMany({ where: { auto_rendszam: req.params.rendszam }, orderBy: { datum: 'desc' } })); } 
+  catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
+});
+
+app.post('/api/admin/szerviz', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const { auto_rendszam, datum, leiras, kilometer } = req.body;
+    const uj = await prisma.szerviz.create({ data: { auto_rendszam, datum: new Date(datum), leiras, kilometer: parseInt(kilometer) } });
+    io.emit('adat_frissites'); // ÚJ
+    res.status(201).json(uj);
+  } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
 });
 
 app.get('/api/utak', authenticateToken, async (req, res) => {
-  try { res.json(await prisma.ut.findMany({ where: { sofor_nev: req.user.username }, include: { auto: true } })); } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
+  try { 
+    const { honap } = req.query; let feltetel = { sofor_nev: req.user.username };
+    if (honap && honap.trim() !== '') feltetel.honap_ev = { contains: honap };
+    res.json(await prisma.ut.findMany({ where: feltetel, include: { auto: true }, orderBy: { id: 'desc' } })); 
+  } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
 });
+
+app.get('/api/admin/utak', authenticateToken, requireAdmin, async (req, res) => {
+  try { 
+    const { honap } = req.query; let feltetel = {};
+    if (honap && honap.trim() !== '') feltetel.honap_ev = { contains: honap };
+    res.json(await prisma.ut.findMany({ where: feltetel, include: { auto: true }, orderBy: { id: 'desc' } })); 
+  } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
+});
+
 app.post('/api/utak', authenticateToken, async (req, res) => {
   try {
     const { auto_rendszam, indulas, erkezes, tavolsag, fogyasztas, honap_ev } = req.body;
-    const auto = await prisma.auto.findUnique({ where: { rendszam: auto_rendszam } });
-    if (!auto || auto.statusz !== 'ELERHETO') return res.status(400).json({ hiba: 'Az autó nem elérhető!' });
     const ujUt = await prisma.ut.create({ data: { sofor_nev: req.user.username, auto_rendszam, indulas, erkezes, tavolsag: parseFloat(tavolsag), koltseg: 0, fogyasztas: parseFloat(fogyasztas), honap_ev, status: 'BEERKEZO' } });
+    io.emit('adat_frissites'); // ÚJ
     res.status(201).json(ujUt);
   } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
 });
-app.get('/api/admin/utak', authenticateToken, requireAdmin, async (req, res) => {
-  try { res.json(await prisma.ut.findMany({ include: { auto: true } })); } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
-});
+
 app.patch('/api/admin/utak/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const ut = await prisma.ut.update({ where: { id: parseInt(req.params.id) }, data: { status: req.body.status } });
+    io.emit('adat_frissites'); // ÚJ
     res.json({ üzenet: `Frissítve`, ut });
   } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
 });
+
+app.patch('/api/utak/:id/lezar', authenticateToken, async (req, res) => {
+  try {
+    const { koltseg, fogyasztas } = req.body;
+    const ut = await prisma.ut.findUnique({ where: { id: parseInt(req.params.id) } });
+    if(!ut || ut.sofor_nev !== req.user.username || ut.status !== 'JOVAHAGYOTT') return res.status(403).json({hiba: 'Nem engedélyezett!'});
+    
+    const frissitett = await prisma.ut.update({ where: { id: parseInt(req.params.id) }, data: { koltseg: parseFloat(koltseg), fogyasztas: parseFloat(fogyasztas), status: 'TELJESITVE' } });
+    await prisma.auto.update({ where: { rendszam: ut.auto_rendszam }, data: { statusz: 'ELERHETO' } });
+    io.emit('adat_frissites'); // ÚJ
+    res.json(frissitett);
+  } catch (error) { res.status(400).json({ hiba: 'Hiba.' }); }
+});
+
 app.get('/api/admin/jelentes/:honap', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const utak = await prisma.ut.findMany({ where: { honap_ev: { startsWith: req.params.honap }, status: 'JOVAHAGYOTT' } });
-    let csv = 'ID;Datum;Sofor;Rendszam;Indulas;Erkezes;Tavolsag(km);Koltseg(EUR);Fogyasztas(L)\n';
+    const utak = await prisma.ut.findMany({ where: { honap_ev: { startsWith: req.params.honap }, status: { in: ['JOVAHAGYOTT', 'TELJESITVE'] } } });
+    let csv = 'ID;Datum;Sofor;Rendszam;Indulas;Erkezes;Tavolsag(km);Koltseg(RON);Fogyasztas(L)\n';
     utak.forEach(u => { csv += `${u.id};${u.honap_ev};${u.sofor_nev};${u.auto_rendszam};${u.indulas};${u.erkezes};${u.tavolsag};${u.koltseg};${u.fogyasztas}\n`; });
     res.header('Content-Type', 'text/csv'); res.attachment(`Jelentes.csv`); res.send(csv);
   } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
 });
 
-const PORT = 3000; app.listen(PORT, () => console.log(`🚗 DriveCheck API fut a ${PORT} porton.`));
+const PORT = 3000; 
+// ÚJ: Itt már a `server.listen`-t hívjuk meg!
+server.listen(PORT, () => console.log(`🚗 DriveCheck API (Socket.io) fut a ${PORT} porton.`));

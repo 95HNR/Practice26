@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -7,33 +8,42 @@ datasource db {
 }
 
 model User {
-  id            Int    @id @default(autoincrement())
-  username      String @unique
+  id            Int      @id @default(autoincrement())
+  username      String   @unique
   password_hash String
-  role          String @default("USER")
+  role          String   @default("USER")
 }
 
 model Auto {
   rendszam           String    @id
   tipus              String
-  statusz            String    @default("ELERHETO") // ELERHETO, FOGLALT
-  itp_lejarat        DateTime? // Dátum formátum
+  statusz            String    @default("ELERHETO")
+  itp_lejarat        DateTime?
   biztositas_lejarat DateTime?
   utado_lejarat      DateTime?
-  szerviz_naplo      String?
   utak               Ut[]
+  szervizek          Szerviz[]
+}
+
+model Szerviz {
+  id            Int      @id @default(autoincrement())
+  auto_rendszam String
+  datum         DateTime
+  leiras        String
+  kilometer     Int
+  auto          Auto     @relation(fields: [auto_rendszam], references: [rendszam], onDelete: Cascade)
 }
 
 model Ut {
-  id            Int    @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
+  honap_ev      String
   sofor_nev     String
   auto_rendszam String
-  auto          Auto   @relation(fields: [auto_rendszam], references: [rendszam])
   indulas       String
   erkezes       String
   tavolsag      Float
   koltseg       Float
   fogyasztas    Float
-  honap_ev      String
-  status        String @default("BEERKEZO")
+  status        String   @default("BEERKEZO")
+  auto          Auto     @relation(fields: [auto_rendszam], references: [rendszam], onDelete: Cascade)
 }
