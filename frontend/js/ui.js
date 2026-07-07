@@ -11,9 +11,31 @@ if (socket) {
 }
 
 function resetDistanceField(resetStart = true, resetEnd = true) { if (resetStart) startCoords = { lat: 0, lon: 0 }; if (resetEnd) endCoords = { lat: 0, lon: 0 }; const tavInput = document.getElementById('utTav'); if (tavInput) { tavInput.value = ''; tavInput.classList.remove('border-emerald-500'); } }
-function calculateDistance(lat1, lon1, lat2, lon2) { const R = 6371; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2); return (R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))).toFixed(1); }
-function searchOSM(inputEl, dropdownId) { clearTimeout(debounceTimer); if (inputEl.id === 'utIndulas') resetDistanceField(true, false); if (inputEl.id === 'utErkezes') resetDistanceField(false, true); const query = inputEl.value.trim(); const dropdown = document.getElementById(dropdownId); if (query.length < 3) return dropdown.classList.add('hidden'); debounceTimer = setTimeout(async () => { try { const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=hu`); const results = await res.json(); if (results.length === 0) { dropdown.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Nincs találat</div>`; return dropdown.classList.remove('hidden'); } dropdown.innerHTML = results.map(item => `<div onclick="selectLocation('${inputEl.id}', '${dropdownId}', '${item.display_name.split(',').slice(0,3).join(', ').trim().replace(/'/g, "\\'")}', ${item.lat}, ${item.lon})" class="p-3 hover:bg-slate-700 cursor-pointer flex gap-2"><span class="text-blue-400">📍</span><div><div class="text-xs font-semibold text-white">${item.display_name.split(',').slice(0,3).join(', ').trim()}</div></div></div>`).join(''); dropdown.classList.remove('hidden'); } catch (err) {} }, 800); }
-function selectLocation(inputId, dropdownId, locationName, lat, lon) { document.getElementById(inputId).value = locationName; document.getElementById(dropdownId).classList.add('hidden'); if (inputId === 'utIndulas') startCoords = { lat, lon }; if (inputId === 'utErkezes') endCoords = { lat, lon }; if (startCoords.lat !== 0 && endCoords.lat !== 0) { const tavInput = document.getElementById('utTav'); tavInput.value = calculateDistance(startCoords.lat, startCoords.lon, endCoords.lat, endCoords.lon); tavInput.classList.add('border-emerald-500'); } }
+
+function searchOSM(inputEl, dropdownId) { clearTimeout(debounceTimer); if (inputEl.id === 'utIndulas') resetDistanceField(true, false); if (inputEl.id === 'utErkezes') resetDistanceField(false, true); const query = inputEl.value.trim(); const dropdown = document.getElementById(dropdownId); if (query.length < 3) return dropdown.classList.add('hidden'); debounceTimer = setTimeout(async () => { try { const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=hu`); const results = await res.json(); if (results.length === 0) { dropdown.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Nincs találat</div>`; return dropdown.classList.remove('hidden'); } dropdown.innerHTML = results.map(item => `<div onclick="selectLocation('${inputEl.id}', '${dropdownId}', '${item.display_name.split(',').slice(0,3).join(', ').trim().replace(/'/g, "\\'")}', ${item.lat}, ${item.lon})" class="p-3 hover:bg-slate-700 cursor-pointer flex gap-2"><span class="text-blue-400">📍</span><div><div class="text-xs font-semibold text-white">${item.display_name.split(',').slice(0,3).join(', ').trim()}</div></div></div>`).join(''); dropdown.classList.remove('hidden'); } catch (err) {} }, 600); }
+
+async function selectLocation(inputId, dropdownId, locationName, lat, lon) {
+  document.getElementById(inputId).value = locationName;
+  document.getElementById(dropdownId).classList.add('hidden');
+  if (inputId === 'utIndulas') startCoords = { lat, lon };
+  if (inputId === 'utErkezes') endCoords = { lat, lon };
+  
+  if (startCoords.lat !== 0 && endCoords.lat !== 0) {
+    const tavInput = document.getElementById('utTav');
+    tavInput.value = 'Tervezés...';
+    
+    // OSRM közúti távolságtervező
+    const url = `https://router.project-osrm.org/route/v1/driving/${startCoords.lon},${startCoords.lat};${endCoords.lon},${endCoords.lat}?overview=false`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.routes && data.routes[0]) {
+        tavInput.value = (data.routes[0].distance / 1000).toFixed(1);
+        tavInput.classList.add('border-emerald-500');
+      }
+    } catch(e) { tavInput.value = 'Hiba!'; }
+  }
+}
 
 function openEditModal(rendszam) { const auto = window.currentFlotta.find(a => a.rendszam === rendszam); if(!auto) return; document.getElementById('editAutoModal').classList.remove('hidden'); document.getElementById('editRendszam').value = auto.rendszam; document.getElementById('editTipus').value = auto.tipus; document.getElementById('editStatusz').value = auto.statusz; document.getElementById('editItp').value = auto.itp ? auto.itp.split('T')[0] : ''; document.getElementById('editRca').value = auto.rca ? auto.rca.split('T')[0] : ''; document.getElementById('editRovinieta').value = auto.rovinieta ? auto.rovinieta.split('T')[0] : ''; }
 function closeEditModal() { document.getElementById('editAutoModal').classList.add('hidden'); }
@@ -48,28 +70,20 @@ async function loadAuditLog() {
 async function renderUI() {
   const token = window.AppState.token; const currentUser = window.AppState.user;
   if (!token) { document.getElementById('loginSection').classList.remove('hidden'); document.getElementById('adminSection').classList.add('hidden'); document.getElementById('kliensSection').classList.add('hidden'); document.getElementById('userInfo').classList.add('hidden'); return; }
-  
   document.getElementById('loginSection').classList.add('hidden'); document.getElementById('userInfo').classList.remove('hidden'); document.getElementById('welcomeText').textContent = `Üdv, ${currentUser.username}!`; document.getElementById('roleBadge').textContent = currentUser.role;
-  const soforUrlap = document.getElementById('soforUrlapContainer'); const alertContainer = document.getElementById('alertContainer'); if(alertContainer) alertContainer.innerHTML = '';
-  const szuro = document.getElementById('kerelmekSzuro'); if(szuro && !szuro.value) { const ma = new Date(); szuro.value = `${ma.getFullYear()}-${String(ma.getMonth() + 1).padStart(2, '0')}`; }
-
   if (currentUser.role === 'ADMIN') {
-    document.getElementById('adminSection').classList.remove('hidden'); document.getElementById('kliensHeader').classList.add('hidden'); if (soforUrlap) soforUrlap.classList.add('hidden');
+    document.getElementById('adminSection').classList.remove('hidden'); document.getElementById('kliensHeader').classList.add('hidden');
     try { 
       const riasztasok = await API.fetchAlerts(token); 
-      if(Array.isArray(riasztasok) && riasztasok.length > 0 && alertContainer) { 
-        alertContainer.innerHTML = riasztasok.map(r => {
+      if(Array.isArray(riasztasok) && riasztasok.length > 0) { 
+        document.getElementById('alertContainer').innerHTML = riasztasok.map(r => {
           const isWarning = r.includes('⚠️');
-          const bgColor = isWarning ? 'bg-amber-900/50' : 'bg-red-900/50';
-          const borderColor = isWarning ? 'border-amber-500' : 'border-red-500';
-          const textColor = isWarning ? 'text-amber-200' : 'text-red-200';
-          return `<div class="${bgColor} border-l-4 ${borderColor} p-4 rounded ${textColor} text-sm font-semibold mb-3 flex items-center shadow-lg"><span class="mr-3 text-xl">${isWarning ? '⚠️' : '🚨'}</span> ${r.replace('⚠️ ', '').replace('🚨 ', '')}</div>`;
+          return `<div class="${isWarning ? 'bg-amber-900/50 border-amber-500 text-amber-200' : 'bg-red-900/50 border-red-500 text-red-200'} border-l-4 p-4 rounded text-sm font-semibold mb-3 flex items-center shadow-lg"><span class="mr-3 text-xl">${isWarning ? '⚠️' : '🚨'}</span> ${r.replace('⚠️ ', '').replace('🚨 ', '')}</div>`;
         }).join(''); 
       } 
     } catch (e) { }
     loadAktivFlotta(); renderDashboard(); loadAuditLog();
-  } else { document.getElementById('adminSection').classList.add('hidden'); document.getElementById('kliensHeader').classList.remove('hidden'); if (soforUrlap) soforUrlap.classList.remove('hidden'); }
-  
+  } else { document.getElementById('adminSection').classList.add('hidden'); document.getElementById('kliensHeader').classList.remove('hidden'); }
   document.getElementById('kliensSection').classList.remove('hidden'); resetDistanceField(true, true); const datumInput = document.getElementById('utDatum'); if (datumInput && !datumInput.value) datumInput.value = new Date().toISOString().split('T')[0];
   loadAutok(); loadUtak(); 
 }
