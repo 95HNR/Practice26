@@ -47,3 +47,12 @@ model Ut {
   status        String   @default("BEERKEZO")
   auto          Auto     @relation(fields: [auto_rendszam], references: [rendszam], onDelete: Cascade)
 }
+
+// --- ÚJ: AUDIT LOG TÁBLA ---
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  datum       DateTime @default(now())
+  felhasznalo String
+  muvelet     String
+  reszletek   String
+}
