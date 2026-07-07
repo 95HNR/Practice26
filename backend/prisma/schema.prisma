@@ -14,13 +14,14 @@ model User {
 }
 
 model Auto {
-  rendszam       String  @id
-  tipus          String
-  statusz        String  @default("ELERHETO")
-  itp_lejart     String?
-  utado_fizetve  String?
-  szerviz_adatok String?
-  utak           Ut[]
+  rendszam           String    @id
+  tipus              String
+  statusz            String    @default("ELERHETO") // ELERHETO, FOGLALT
+  itp_lejarat        DateTime? // Dátum formátum
+  biztositas_lejarat DateTime?
+  utado_lejarat      DateTime?
+  szerviz_naplo      String?
+  utak               Ut[]
 }
 
 model Ut {

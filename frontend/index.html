@@ -3,139 +3,106 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DriveCheck V2 - Decoupled Architektúra</title>
+  <title>DriveCheck V2</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    input::-webkit-outer-spin-button,
-    input::-webkit-inner-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-  </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
-
   <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
-    <div class="flex items-center gap-2">
-      <span class="text-2xl font-bold text-blue-500">🚗 DriveCheck V2</span>
-      <span class="text-xs bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded">Decoupled Architecture</span>
-    </div>
-    <div id="userInfo" class="hidden flex items-center gap-4">
-      <span id="welcomeText" class="text-sm"></span>
-      <span id="roleBadge" class="px-2.5 py-0.5 rounded text-xs font-bold uppercase"></span>
-      <button onclick="logout()" class="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm transition">Kijelentkezés</button>
-    </div>
+    <div class="flex items-center gap-2"><span class="text-2xl font-bold text-blue-500">🚗 DriveCheck V2</span></div>
+    <div id="userInfo" class="hidden flex items-center gap-4"><span id="welcomeText" class="text-sm"></span><span id="roleBadge" class="px-2.5 py-0.5 rounded text-xs font-bold uppercase"></span><button onclick="logout()" class="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm transition">Kijelentkezés</button></div>
   </header>
 
-  <main class="max-w-6xl mx-auto p-6">
+  <main class="max-w-6xl mx-auto p-6 relative">
     
-    <div id="loginSection" class="max-w-md mx-auto mt-12 bg-slate-800 p-8 rounded-xl border border-slate-700 shadow-2xl">
+    <div id="editAutoModal" class="hidden fixed inset-0 bg-black/80 flex justify-center items-center z-50 p-4">
+      <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 w-full max-w-md shadow-2xl relative">
+        <button onclick="closeEditModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-xl">×</button>
+        <h4 class="font-semibold mb-4 text-lg">✏️ Autó Módosítása</h4>
+        <form onsubmit="submitEditAuto(event)" class="space-y-3">
+          <input type="text" id="editRendszam" readonly class="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-slate-500 cursor-not-allowed font-mono">
+          <input type="text" id="editTipus" required class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+          <div class="grid grid-cols-3 gap-3">
+            <div><label class="text-[10px] text-slate-400 uppercase">ITP</label><input type="date" id="editItp" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm"></div>
+            <div><label class="text-[10px] text-slate-400 uppercase">RCA</label><input type="date" id="editRca" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm"></div>
+            <div><label class="text-[10px] text-slate-400 uppercase">Utadó</label><input type="date" id="editRovinieta" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm"></div>
+          </div>
+          <input type="text" id="editSzerviz" placeholder="Szerviz bejegyzés" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white text-sm">
+          <select id="editStatusz" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"><option value="ELERHETO">ELÉRHETŐ</option><option value="FOGLALT">FOGLALT</option></select>
+          <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2.5 rounded transition">Változtatások Mentése</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="loginSection" class="max-w-md mx-auto mt-12 bg-slate-800 p-8 rounded-xl shadow-2xl">
       <h2 class="text-xl font-bold mb-6 text-center text-white">Bejelentkezés</h2>
-      <div id="loginError" class="hidden bg-red-500/20 border border-red-500 text-red-300 p-3 rounded text-sm mb-4 text-center"></div>
+      <div id="loginError" class="hidden bg-red-500/20 text-red-300 p-3 rounded text-sm mb-4"></div>
       <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-sm text-slate-400 mb-1">Felhasználónév</label>
-          <input type="text" id="username" required class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-sm text-slate-400 mb-1">Jelszó</label>
-          <input type="password" id="password" required class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none">
-        </div>
+        <input type="text" id="username" placeholder="Felhasználónév" required class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+        <input type="password" id="password" placeholder="Jelszó" required class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded transition">Belépés</button>
       </form>
     </div>
 
     <div id="adminSection" class="hidden space-y-6">
+      <div id="alertContainer"></div>
       <div class="bg-blue-900/30 border border-blue-500/30 p-4 rounded-lg flex justify-between items-center">
-        <div>
-          <h3 class="font-bold text-blue-400">🛡️ Flottafelelős (Admin) Kezelőpult</h3>
-          <p class="text-sm text-slate-300">Igények jóváhagyása és flotta exportálása.</p>
-        </div>
-        <button onclick="downloadCSV()" class="bg-blue-600 hover:bg-blue-500 text-white text-sm px-4 py-2 rounded font-semibold">
-          📥 Havi Jelentés (CSV)
-        </button>
+        <div><h3 class="font-bold text-blue-400">🛡️ Flottafelelős Kezelőpult</h3></div>
+        <button onclick="downloadCSV()" class="bg-blue-600 px-4 py-2 rounded text-sm font-semibold">📥 Havi Jelentés</button>
       </div>
-
-      <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-        <h4 class="font-semibold mb-4 text-lg">➕ Új Autó Hozzáadása</h4>
-        <form onsubmit="addAuto(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <input type="text" id="autoRendszam" placeholder="Rendszám" required class="bg-slate-900 border border-slate-700 rounded p-2 text-white">
-          <input type="text" id="autoTipus" placeholder="Típus" required class="bg-slate-900 border border-slate-700 rounded p-2 text-white">
-          <select id="autoStatusz" class="bg-slate-900 border border-slate-700 rounded p-2 text-white">
-            <option value="ELERHETO">ELÉRHETŐ</option>
-            <option value="FOGLALT">FOGLALT</option>
-          </select>
-          <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 rounded">Mentés</button>
-        </form>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+          <h4 class="font-semibold mb-4 text-lg">➕ Új Autó Hozzáadása</h4>
+          <form onsubmit="addAuto(event)" class="space-y-3">
+            <div class="grid grid-cols-2 gap-3"><input type="text" id="autoRendszam" placeholder="Rendszám" required class="bg-slate-900 border border-slate-700 rounded p-2.5 text-white"><input type="text" id="autoTipus" placeholder="Típus" required class="bg-slate-900 border border-slate-700 rounded p-2.5 text-white"></div>
+            <div class="grid grid-cols-3 gap-3">
+              <div><label class="text-[10px] text-slate-400 uppercase">ITP</label><input type="date" id="autoItp" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm"></div>
+              <div><label class="text-[10px] text-slate-400 uppercase">RCA</label><input type="date" id="autoBiztositas" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm"></div>
+              <div><label class="text-[10px] text-slate-400 uppercase">Utadó</label><input type="date" id="autoUtado" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm"></div>
+            </div>
+            <input type="text" id="autoSzerviz" placeholder="Szerviz előzmények" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white text-sm">
+            <select id="autoStatusz" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"><option value="ELERHETO">ELÉRHETŐ</option><option value="FOGLALT">FOGLALT</option></select>
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded">Autó Mentése</button>
+          </form>
+        </div>
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+          <h4 class="font-semibold mb-4 text-lg">👤 Új Felhasználó</h4>
+          <div id="registerMessage" class="hidden p-3 rounded text-sm mb-4"></div>
+          <form onsubmit="createUser(event)" class="space-y-4">
+            <input type="text" id="newUsername" placeholder="Felhasználónév" required class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+            <input type="password" id="newPassword" placeholder="Jelszó" required class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+            <select id="newRole" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"><option value="USER">SOFŐR</option><option value="ADMIN">ADMIN</option></select>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded">Létrehozás</button>
+          </form>
+        </div>
       </div>
     </div>
 
     <div id="kliensSection" class="hidden space-y-6 mt-6">
-      <div id="kliensHeader" class="bg-emerald-900/30 border border-emerald-500/30 p-4 rounded-lg">
-        <h3 class="font-bold text-emerald-400">👤 Sofőr Igénylő Felület</h3>
-        <p class="text-sm text-slate-300">Válassz elérhető autót, dátumot és útvonalat az igény leadásához.</p>
-      </div>
-
-      <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
-        <h4 class="font-semibold mb-5 text-lg flex items-center gap-2">
-          <span>✍️</span> Új Fuvarigény Leadása
-        </h4>
-        
+      <div id="kliensHeader" class="bg-emerald-900/30 p-4 rounded-lg"><h3 class="font-bold text-emerald-400">👤 Sofőr Igénylő Felület</h3></div>
+      <div id="soforUrlapContainer" class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+        <h4 class="font-semibold mb-5 text-lg flex items-center gap-2"><span>✍️</span> Új Fuvarigény</h4>
         <form onsubmit="addUt(event)" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Elérhető Autó</label>
-            <select id="utRendszam" required class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none transition cursor-pointer">
-              <option value="">Betöltés...</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Fuvar Dátuma</label>
-            <input type="date" id="utDatum" required onchange="loadAutok()"
-                   class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none transition cursor-pointer">
-          </div>
-          
-          <div class="relative">
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Indulás (Honnan)</label>
-            <input type="text" id="utIndulas" placeholder="Kezdd el írni..." required autocomplete="off" oninput="searchOSM(this, 'indulasList')" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none transition">
-            <div id="indulasList" class="absolute z-50 left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl hidden max-h-56 overflow-y-auto divide-y divide-slate-700"></div>
-          </div>
-
-          <div class="relative">
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Érkezés (Hová)</label>
-            <input type="text" id="utErkezes" placeholder="Kezdd el írni..." required autocomplete="off" oninput="searchOSM(this, 'erkezesList')" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white focus:border-blue-500 outline-none transition">
-            <div id="erkezesList" class="absolute z-50 left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl hidden max-h-56 overflow-y-auto divide-y divide-slate-700"></div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Távolság (km)</label>
-            <input type="text" id="utTav" placeholder="Automatikus..." readonly class="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-slate-400 cursor-not-allowed">
-          </div>
-          
-          <button type="submit" class="md:col-span-5 mt-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-lg transition shadow-lg shadow-blue-600/30">
-            Igény Benyújtása a Flottafelelősnek
-          </button>
+          <select id="utRendszam" required class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"><option value="">Betöltés...</option></select>
+          <input type="date" id="utDatum" required onchange="loadAutok()" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+          <div class="relative"><input type="text" id="utIndulas" placeholder="Indulás" required autocomplete="off" oninput="searchOSM(this, 'indulasList')" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"><div id="indulasList" class="absolute z-50 left-0 right-0 top-full mt-1 bg-slate-800 rounded-lg hidden"></div></div>
+          <div class="relative"><input type="text" id="utErkezes" placeholder="Érkezés" required autocomplete="off" oninput="searchOSM(this, 'erkezesList')" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white"><div id="erkezesList" class="absolute z-50 left-0 right-0 top-full mt-1 bg-slate-800 rounded-lg hidden"></div></div>
+          <input type="text" id="utTav" placeholder="Távolság" readonly class="w-full bg-slate-950 border border-slate-700 rounded p-2.5 text-slate-400">
+          <button type="submit" class="md:col-span-5 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-lg">Igény Benyújtása</button>
         </form>
       </div>
 
       <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-        <h4 class="font-semibold mb-4 text-lg">🚘 Flotta Állapota (MÁRA)</h4>
+        <h4 class="font-semibold mb-4 text-lg">🚘 Flotta Állapota</h4>
         <div id="autoList" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
       </div>
-
+      
       <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-        <h4 class="font-semibold mb-4 text-lg">📋 Kérelmek és Előzmények</h4>
+        <h4 class="font-semibold mb-4 text-lg">📋 Kérelmek</h4>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="border-b border-slate-700 text-slate-400 text-sm">
-                <th class="py-2">ID</th>
-                <th class="py-2">Dátum</th>
-                <th class="py-2">Sofőr</th>
-                <th class="py-2">Autó</th>
-                <th class="py-2">Útvonal</th>
-                <th class="py-2">Státusz</th>
-                <th class="py-2">Művelet</th>
+                <th class="py-2">ID</th><th class="py-2">Dátum</th><th class="py-2">Sofőr</th><th class="py-2">Autó</th><th class="py-2">Útvonal</th><th class="py-2">Státusz</th><th class="py-2">Művelet</th>
               </tr>
             </thead>
             <tbody id="utList" class="divide-y divide-slate-700 text-sm"></tbody>
@@ -143,11 +110,8 @@
         </div>
       </div>
     </div>
-
   </main>
 
-  <script src="js/api.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script><script src="js/ui.js"></script><script src="js/auth.js"></script>
 </body>
 </html>
