@@ -308,12 +308,15 @@ async function loadAutok() {
   try {
     const response = await API.fetchAutok(token, formDate);
 
-    // Biztonsági ellenőrzés: ha a backend egy { autok: [...] } objektumot küld, kibontjuk
+    // Biztonsági unwrap: kezeli, ha a backend tömböt vagy objektumba csomagolt tömböt ad vissza
     const autok = response.autok ? response.autok : response;
 
     if (!Array.isArray(autok)) {
-      console.error("Hiba: Az API nem tömböt adott vissza a loadAutok hívásnál!", response);
-      document.getElementById('autoList').innerHTML = '<div class="col-span-full py-6 text-center theme-muted font-bold">Hiba történt az adatok beolvasásakor. Ellenőrizd a konzolt!</div>';
+      console.error("Hiba: Az API nem tömb formátumban küldte a flottát:", response);
+      document.getElementById('autoList').innerHTML = `
+        <div class="col-span-full py-8 text-center text-red-500 font-bold bg-red-500/5 rounded-2xl border border-red-500/20">
+          Hiba történt az adatok feldolgozásakor.
+        </div>`;
       return;
     }
 
@@ -321,35 +324,43 @@ async function loadAutok() {
     const autoListContainer = document.getElementById('autoList');
 
     if (autok.length === 0) {
-      autoListContainer.innerHTML = '<div class="col-span-full py-8 text-center theme-muted font-bold text-lg">Nincs megjeleníthető jármű a rendszerben.</div>';
+      autoListContainer.innerHTML = `
+        <div class="col-span-full py-12 flex flex-col items-center justify-center theme-input rounded-3xl border-2 border-dashed theme-border">
+          <div class="text-5xl mb-4 opacity-40">🚘</div>
+          <p class="font-black theme-text text-lg tracking-tight">A járműpark üres</p>
+          <p class="theme-muted text-sm mt-2 font-medium">Nincs regisztrált autó a rendszerben.</p>
+        </div>`;
     } else {
       autoListContainer.innerHTML = autok.map((a, i) => `
-        <div class="theme-card p-6 rounded-3xl border-0 ${a.statusz === 'FOGLALT' ? 'border-l-8 border-l-red-500' : 'border-l-8 border-l-emerald-500'} flex flex-col justify-between fade-in" style="animation-delay: ${i * 50}ms">
-          <div>
-            <div class="flex justify-between items-start mb-6">
-              <div>
-                <div class="font-black theme-text text-2xl tracking-widest font-mono">${a.rendszam}</div>
-                <div class="text-xs theme-muted font-black uppercase tracking-widest mt-1">${a.tipus}</div>
-              </div>
-              <span class="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-md font-black tracking-widest ${a.statusz === 'ELERHETO' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}">
-                <div class="w-1.5 h-1.5 rounded-full ${a.statusz === 'ELERHETO' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}"></div> ${a.statusz}
-              </span>
+        <div class="theme-card group p-6 rounded-3xl border-0 ring-1 ring-inset ring-slate-500/20 hover:ring-2 hover:ring-blue-500/50 shadow-xl shadow-black/5 flex flex-col justify-between fade-in transition-all duration-500 hover:-translate-y-1" style="animation-delay: ${i * 50}ms">
+          
+          <div class="flex justify-between items-start mb-6">
+            <div>
+              <div class="font-black theme-text text-2xl tracking-widest font-mono drop-shadow-sm select-all">${a.rendszam}</div>
+              <div class="text-[10px] theme-muted font-black uppercase tracking-widest mt-1">${a.tipus}</div>
             </div>
-            <div class="text-[11px] grid grid-cols-3 gap-2 theme-input p-3 rounded-xl text-center shadow-inner mb-2">
-              <div><span class="block theme-muted font-bold mb-1">ITP</span> <span class="font-mono theme-text font-bold">${formatDateStr(a.itp)}</span></div>
-              <div><span class="block theme-muted font-bold mb-1">RCA</span> <span class="font-mono theme-text font-bold">${formatDateStr(a.rca)}</span></div>
-              <div><span class="block theme-muted font-bold mb-1">UTADÓ</span> <span class="font-mono theme-text font-bold">${formatDateStr(a.rovinieta)}</span></div>
-            </div>
+            <span class="flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-full font-black tracking-widest backdrop-blur-sm ${a.statusz === 'ELERHETO' ? 'bg-emerald-500/10 text-emerald-500 ring-1 ring-inset ring-emerald-500/20' : 'bg-red-500/10 text-red-500 ring-1 ring-inset ring-red-500/20'}">
+              <div class="w-1.5 h-1.5 rounded-full ${a.statusz === 'ELERHETO' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}"></div>
+              ${a.statusz === 'ELERHETO' ? 'ELÉRHETŐ' : 'FOGLALT'}
+            </span>
           </div>
+
+          <div class="grid grid-cols-3 gap-2 theme-input p-4 rounded-2xl text-center mb-6 border theme-border shadow-inner group-hover:border-blue-500/20 transition-colors duration-500">
+            <div class="flex flex-col"><span class="block theme-muted text-[9px] font-black mb-1.5 uppercase tracking-wider">ITP</span> <span class="font-mono theme-text text-xs font-bold">${formatDateStr(a.itp)}</span></div>
+            <div class="flex flex-col"><span class="block theme-muted text-[9px] font-black mb-1.5 uppercase tracking-wider">RCA</span> <span class="font-mono theme-text text-xs font-bold">${formatDateStr(a.rca)}</span></div>
+            <div class="flex flex-col"><span class="block theme-muted text-[9px] font-black mb-1.5 uppercase tracking-wider">Utadó</span> <span class="font-mono theme-text text-xs font-bold">${formatDateStr(a.rovinieta)}</span></div>
+          </div>
+
           ${currentUser && currentUser.role === 'ADMIN' ? `
-          <div class="mt-4 flex gap-2 pt-4 border-t theme-border">
-            <button onclick="openSzervizModal('${a.rendszam}')" class="flex-1 bg-blue-500/10 text-blue-500 text-xs py-2.5 rounded-xl font-bold hover:bg-blue-500/20 transition">🛠️ Szerviz</button>
-            <button onclick="openEditModal('${a.rendszam}')" class="flex-1 bg-amber-500/10 text-amber-500 text-xs py-2.5 rounded-xl font-bold hover:bg-amber-500/20 transition">✏️ Módosít</button>
-            <button onclick="deleteAutoAction('${a.rendszam}')" class="bg-red-500/10 text-red-500 text-xs px-4 py-2.5 rounded-xl font-bold hover:bg-red-500/20 transition" title="Törlés">🗑️</button>
+          <div class="flex gap-2 pt-4 border-t theme-border group-hover:border-blue-500/20 transition-colors duration-500">
+            <button onclick="openSzervizModal('${a.rendszam}')" class="flex-1 bg-slate-500/5 hover:bg-blue-500/20 theme-text text-xs py-3 rounded-xl font-black transition-all border theme-border flex items-center justify-center gap-1">🛠️ Szerviz</button>
+            <button onclick="openEditModal('${a.rendszam}')" class="flex-1 bg-amber-500/5 hover:bg-amber-500/20 text-amber-500 text-xs py-3 rounded-xl font-black transition-all border border-amber-500/20 flex items-center justify-center gap-1">✏️ Módosít</button>
+            <button onclick="deleteAutoAction('${a.rendszam}')" class="bg-red-500/5 hover:bg-red-500/20 text-red-500 text-xs px-4 py-3 rounded-xl font-black transition-all border border-red-500/20 flex items-center justify-center" title="Törlés">🗑️</button>
           </div>` : ''}
         </div>`).join('');
     }
 
+    // Autó választó legördülő menü (Select) frissítése a sofőrök felületén
     const rendszamSelect = document.getElementById('utRendszam');
     if (rendszamSelect && currentUser.role === 'USER') {
       const elerhetoAutok = autok.filter(a => a.elerhetoAFormDatumon);
@@ -370,8 +381,11 @@ async function loadAutok() {
       }
     }
   } catch (e) {
-    console.error("Kritikus hiba a loadAutok függvényben:", e);
-    document.getElementById('autoList').innerHTML = '<div class="col-span-full py-6 text-center text-red-500 font-bold">Nem sikerült kapcsolódni a szerverhez.</div>';
+    console.error("Kritikus hiba lépett fel a loadAutok futtatásakor:", e);
+    document.getElementById('autoList').innerHTML = `
+      <div class="col-span-full py-8 text-center text-red-500 font-bold bg-red-500/5 rounded-2xl border border-red-500/20">
+        Nem sikerült kommunikálni a flottakezelő szerverrel.
+      </div>`;
   }
 }
 
