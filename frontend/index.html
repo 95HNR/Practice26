@@ -10,7 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      /* SÖTÉT MÓD (Alapértelmezett) */
+      /* SÖTÉT MÓD */
       --bg-app: #0f172a;
       --bg-card: #1e293b;
       --bg-input: #0f172a;
@@ -22,7 +22,7 @@
     }
 
     .light-theme {
-      /* VILÁGOS MÓD (Tiszta, elegáns) */
+      /* VILÁGOS MÓD */
       --bg-app: #f8fafc;
       --bg-card: #ffffff;
       --bg-input: #f1f5f9;
@@ -36,10 +36,10 @@
     body {
       background-color: var(--bg-app);
       color: var(--text-main);
-      transition: background-color 0.4s ease, color 0.4s ease;
+      transition: background-color 0.4s, color 0.4s;
     }
 
-    /* --- SAJÁT TÉMA OSZTÁLYOK --- */
+    /* Kártyák */
     .theme-card {
       background-color: var(--bg-card);
       border: 1px solid var(--border-color);
@@ -47,17 +47,11 @@
       transition: all 0.3s ease;
     }
 
+    /* Inputok */
     .theme-input {
       background-color: var(--bg-input) !important;
       border: 1px solid var(--border-color) !important;
       color: var(--text-main) !important;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-
-    .theme-input:focus {
-      border-color: #3b82f6 !important;
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
     }
 
     .theme-text {
@@ -68,30 +62,41 @@
       color: var(--text-muted);
     }
 
-    .theme-border {
-      border-color: var(--border-color);
+    /* AUDIT TÁBLÁZAT - VÉKONY, EGYSÉGES VONALAK */
+    table {
+      border-collapse: collapse !important;
+      width: 100%;
+      border: none !important;
     }
 
-    .theme-row:hover {
-      background-color: var(--hover-bg);
+    #auditLogList tr {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.05) !important;
+      transition: background 0.2s;
     }
 
-    .sticky-header {
-      background-color: var(--bg-card);
+    #auditLogList tr:hover {
+      background-color: rgba(100, 100, 100, 0.05);
     }
 
-    /* A táblázat fejlécéhez */
+    thead tr {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.08) !important;
+    }
+
+    th,
+    td {
+      border: none !important;
+    }
 
     /* Animációk */
     .fade-in {
-      animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      animation: fadeIn 0.5s ease-out forwards;
       opacity: 0;
     }
 
     @keyframes fadeIn {
       from {
         opacity: 0;
-        transform: translateY(15px);
+        transform: translateY(10px);
       }
 
       to {
@@ -100,53 +105,17 @@
       }
     }
 
-    .modal-enter {
-      animation: modalIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    }
-
-    @keyframes modalIn {
-      from {
-        opacity: 0;
-        transform: scale(0.95) translateY(15px);
-      }
-
-      to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-      }
-    }
-
-    button {
-      transition: all 0.2s ease !important;
-    }
-
-    button:active {
-      transform: scale(0.97);
-    }
-
     /* Scrollbar */
     ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: transparent;
+      width: 6px;
     }
 
     ::-webkit-scrollbar-thumb {
       background: var(--border-color);
       border-radius: 10px;
-
-      .theme-card {
-        background-color: var(--bg-card);
-        border: 1px solid var(--border-color);
-        /* A titok: egy nagyon finom belső keret, ami kiemeli a kártyát */
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 10px 30px -10px var(--shadow-color);
-      }
-
     }
   </style>
+
 </head>
 
 <body class="font-sans antialiased">
@@ -280,16 +249,34 @@
     </div>
 
     <div id="adminSection" class="hidden space-y-8 mt-4">
+
       <div id="alertContainer" class="space-y-3"></div>
 
+      <div id="beerkezoList" class="space-y-3"></div>
+
       <div
-        class="bg-blue-500/10 border border-blue-500/20 p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center shadow-sm">
-        <div class="mb-4 sm:mb-0">
+        class="bg-blue-500/10 border border-blue-500/20 p-6 rounded-3xl flex flex-col xl:flex-row justify-between items-center shadow-sm gap-4">
+        <div class="mb-4 xl:mb-0">
           <h3 class="font-black text-blue-500 text-xl flex items-center gap-3"><span>🛡️</span> Vezérlőpult</h3>
         </div>
-        <button onclick="downloadCSV()"
-          class="bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-xl text-sm font-black text-white shadow-lg shadow-blue-600/30 flex items-center gap-2">📥
-          CSV Jelentés Letöltése</button>
+
+        <div class="flex flex-wrap items-center gap-2 bg-black/20 p-2 rounded-2xl border border-white/5">
+          <select id="periodusTipus" onchange="toggleDateInputs()"
+            class="theme-input p-2.5 rounded-xl text-sm font-bold cursor-pointer">
+            <option value="nap">Napi jelentés</option>
+            <option value="honap">Havi jelentés</option>
+            <option value="ev">Éves jelentés</option>
+            <option value="intervallum">Egyedi időszak (tól-ig)</option>
+          </select>
+
+          <input type="date" id="dateStart" class="theme-input p-2.5 rounded-xl text-sm font-bold">
+          <input type="date" id="dateEnd" class="hidden theme-input p-2.5 rounded-xl text-sm font-bold">
+
+          <button onclick="downloadAdvancedJelentes()"
+            class="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl text-sm font-black text-white shadow-lg shadow-blue-600/30 flex items-center gap-2 transition">
+            📥 CSV Letöltése
+          </button>
+        </div>
       </div>
 
       <div class="theme-card p-6 sm:p-8 rounded-3xl">
@@ -328,8 +315,9 @@
               <option value="FOGLALT">FOGLALT</option>
             </select>
             <button type="submit"
-              class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 text-lg">Hozzáadás
-              a Flottához</button>
+              class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 text-lg">
+              Hozzáadás a Flottához
+            </button>
           </form>
         </div>
 
@@ -346,17 +334,18 @@
               <option value="ADMIN">ADMIN JOGOSULTSÁG</option>
             </select>
             <button type="submit"
-              class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-600/30 text-lg">Fiók
-              Létrehozása</button>
+              class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-600/30 text-lg">
+              Fiók Létrehozása
+            </button>
           </form>
         </div>
       </div>
 
       <div class="theme-card p-6 sm:p-8 rounded-3xl">
         <h4 class="font-bold mb-6 text-xl theme-text flex items-center gap-3"><span>📜</span> Rendszer Audit Napló</h4>
-        <div class="overflow-x-auto max-h-80 overflow-y-auto rounded-2xl border theme-border">
+        <div class="overflow-x-auto max-h-80 overflow-y-auto rounded-2xl theme-border">
           <table class="w-full text-left border-collapse">
-            <thead class="border-b theme-border text-xs uppercase tracking-widest font-black theme-muted">
+            <thead class="text-xs uppercase tracking-widest font-black theme-muted">
               <tr>
                 <th class="py-4 px-5 sticky top-0 sticky-header">Dátum</th>
                 <th class="py-4 px-5 sticky top-0 sticky-header">Felhasználó</th>
@@ -364,7 +353,7 @@
                 <th class="py-4 px-5 sticky top-0 sticky-header">Részletek</th>
               </tr>
             </thead>
-            <tbody id="auditLogList" class="divide-y theme-border text-sm">
+            <tbody id="auditLogList" class="text-sm">
               <tr>
                 <td colspan="4" class="py-8 text-center theme-muted font-bold">Betöltés...</td>
               </tr>

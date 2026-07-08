@@ -4,12 +4,38 @@ let debounceTimer = null;
 window.currentFlotta = [];
 let costChartInstance = null;
 
+// --- SOCKET.IO ÉS ÉRTESÍTÉSEK ---
 const socket = (typeof io !== 'undefined') ? io('http://localhost:3000') : null;
+
+window.showNotification = function (msg) {
+  const container = document.getElementById('alertContainer');
+  if (!container) return;
+  const note = document.createElement('div');
+
+  // Téma-kompatibilis stílus kék bal oldali kerettel
+  note.className = "theme-card border-l-4 border-l-blue-500 p-4 rounded-xl shadow-lg fade-in font-bold flex items-center gap-3 transition-opacity duration-300 mb-3";
+  note.innerHTML = `<span class="text-2xl">🔔</span> <span class="theme-text">${msg}</span>`;
+
+  container.prepend(note);
+
+  setTimeout(() => {
+    note.style.opacity = '0';
+    setTimeout(() => note.remove(), 300);
+  }, 5000);
+};
+
 if (socket) {
   socket.on('adat_frissites', () => {
-    if (window.AppState.token) {
-      loadAutok(); loadUtak();
-      if (window.AppState.user.role === 'ADMIN') { loadAktivFlotta(); renderDashboard(); loadAuditLog(); }
+    if (window.AppState && window.AppState.user && window.AppState.user.role === 'ADMIN') {
+      if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
+      showNotification("Új fuvarigény vagy rendszeresemény történt!");
+      if (typeof loadAuditLog === 'function') loadAuditLog();
+      if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
+      if (typeof renderDashboard === 'function') renderDashboard();
+    }
+    if (window.AppState && window.AppState.token) {
+      if (typeof loadAutok === 'function') loadAutok();
+      if (typeof loadUtak === 'function') loadUtak();
     }
   });
 }
@@ -22,9 +48,8 @@ function toggleTheme() {
   localStorage.setItem('drivecheck_theme', isLight ? 'light' : 'dark');
 
   if (typeof costChartInstance !== 'undefined' && costChartInstance) {
-    // A változók lekérése CSS-ből
-    const textColor = isLight ? '#475569' : '#94a3b8'; // text-muted színek
-    const gridColor = isLight ? '#e2e8f0' : '#334155'; // border-color színek
+    const textColor = isLight ? '#475569' : '#94a3b8';
+    const gridColor = isLight ? '#e2e8f0' : '#334155';
 
     costChartInstance.options.plugins.legend.labels.color = textColor;
     costChartInstance.options.scales.x.ticks.color = textColor;
@@ -99,7 +124,8 @@ async function selectLocation(inputId, dropdownId, locationName, lat, lon) {
 function openModalWithAnim(modalId) {
   const modal = document.getElementById(modalId);
   modal.classList.remove('hidden');
-  modal.querySelector('.glass-card').classList.add('modal-enter');
+  const card = modal.querySelector('.theme-card');
+  if (card) card.classList.add('fade-in');
 }
 
 function openEditModal(rendszam) {
@@ -166,7 +192,6 @@ async function renderDashboard() {
       costChartInstance.data.datasets[0].data = data;
       costChartInstance.update();
     } else {
-      // Gyönyörű görbített vonalas grafikon feszítéssel (tension: 0.4)
       costChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -182,7 +207,7 @@ async function renderDashboard() {
             pointRadius: 6,
             pointHoverRadius: 8,
             fill: true,
-            tension: 0.4 // GÖRBÍTETT VONALAK
+            tension: 0.4
           }]
         },
         options: {
@@ -199,18 +224,19 @@ async function renderDashboard() {
 }
 
 async function loadAuditLog() {
-  const token = window.AppState.token; if (!token || window.AppState.user.role !== 'ADMIN') return;
+  const token = window.AppState.token;
+  if (!token || window.AppState.user.role !== 'ADMIN') return;
   const container = document.getElementById('auditLogList');
   try {
     const logs = await API.fetchAudit(token);
     container.innerHTML = logs.map((l, index) => `
-      <tr class="hover:bg-slate-800/40 transition fade-in" style="animation-delay: ${index * 50}ms">
-        <td class="py-4 px-5 text-slate-500 text-xs font-bold whitespace-nowrap">${new Date(l.datum).toLocaleString()}</td>
-        <td class="py-4 px-5 font-black text-white">${l.felhasznalo}</td>
-        <td class="py-4 px-5 text-blue-400 font-black text-xs tracking-widest uppercase">${l.muvelet}</td>
-        <td class="py-4 px-5 text-slate-300 font-medium">${l.reszletek}</td>
+      <tr class="transition-all duration-300 fade-in border-b border-slate-700/20" style="animation-delay: ${index * 50}ms">
+        <td class="py-5 px-6 text-[11px] theme-muted font-mono font-black">${new Date(l.datum).toLocaleString()}</td>
+        <td class="py-5 px-6 font-black theme-text text-sm">${l.felhasznalo}</td>
+        <td class="py-5 px-6 text-blue-500 font-black text-[10px] tracking-widest uppercase">${l.muvelet}</td>
+        <td class="py-5 px-6 theme-text text-sm font-medium">${l.reszletek}</td>
       </tr>`).join('');
-  } catch (e) { }
+  } catch (e) { console.error(e); }
 }
 
 async function renderUI() {
@@ -247,7 +273,7 @@ async function renderUI() {
         }).join('');
       }
     } catch (e) { }
-    loadAktivFlotta(); renderDashboard(); loadAuditLog();
+    loadAktivFlotta(); renderDashboard(); loadAuditLog(); loadBeerkezoList(); // <-- Beérkező lista hívása itt
   } else {
     document.getElementById('adminSection').classList.add('hidden');
     document.getElementById('kliensHeader').classList.remove('hidden');
@@ -269,7 +295,6 @@ async function loadAktivFlotta() {
   const container = document.getElementById('aktivFlottaList');
   try {
     const aktivUtak = await API.fetchAktivFlotta(token);
-    // A loadAktivFlotta függvényben:
     if (!Array.isArray(aktivUtak) || aktivUtak.length === 0) {
       container.innerHTML = `
     <div class="col-span-full py-12 flex flex-col items-center justify-center theme-input rounded-3xl border-2 border-dashed theme-border">
@@ -307,12 +332,9 @@ async function loadAutok() {
 
   try {
     const response = await API.fetchAutok(token, formDate);
-
-    // Biztonsági unwrap: kezeli, ha a backend tömböt vagy objektumba csomagolt tömböt ad vissza
     const autok = response.autok ? response.autok : response;
 
     if (!Array.isArray(autok)) {
-      console.error("Hiba: Az API nem tömb formátumban küldte a flottát:", response);
       document.getElementById('autoList').innerHTML = `
         <div class="col-span-full py-8 text-center text-red-500 font-bold bg-red-500/5 rounded-2xl border border-red-500/20">
           Hiba történt az adatok feldolgozásakor.
@@ -333,7 +355,6 @@ async function loadAutok() {
     } else {
       autoListContainer.innerHTML = autok.map((a, i) => `
         <div class="theme-card group p-6 rounded-3xl border-0 ring-1 ring-inset ring-slate-500/20 hover:ring-2 hover:ring-blue-500/50 shadow-xl shadow-black/5 flex flex-col justify-between fade-in transition-all duration-500 hover:-translate-y-1" style="animation-delay: ${i * 50}ms">
-          
           <div class="flex justify-between items-start mb-6">
             <div>
               <div class="font-black theme-text text-2xl tracking-widest font-mono drop-shadow-sm select-all">${a.rendszam}</div>
@@ -344,13 +365,11 @@ async function loadAutok() {
               ${a.statusz === 'ELERHETO' ? 'ELÉRHETŐ' : 'FOGLALT'}
             </span>
           </div>
-
           <div class="grid grid-cols-3 gap-2 theme-input p-4 rounded-2xl text-center mb-6 border theme-border shadow-inner group-hover:border-blue-500/20 transition-colors duration-500">
             <div class="flex flex-col"><span class="block theme-muted text-[9px] font-black mb-1.5 uppercase tracking-wider">ITP</span> <span class="font-mono theme-text text-xs font-bold">${formatDateStr(a.itp)}</span></div>
             <div class="flex flex-col"><span class="block theme-muted text-[9px] font-black mb-1.5 uppercase tracking-wider">RCA</span> <span class="font-mono theme-text text-xs font-bold">${formatDateStr(a.rca)}</span></div>
             <div class="flex flex-col"><span class="block theme-muted text-[9px] font-black mb-1.5 uppercase tracking-wider">Utadó</span> <span class="font-mono theme-text text-xs font-bold">${formatDateStr(a.rovinieta)}</span></div>
           </div>
-
           ${currentUser && currentUser.role === 'ADMIN' ? `
           <div class="flex gap-2 pt-4 border-t theme-border group-hover:border-blue-500/20 transition-colors duration-500">
             <button onclick="openSzervizModal('${a.rendszam}')" class="flex-1 bg-slate-500/5 hover:bg-blue-500/20 theme-text text-xs py-3 rounded-xl font-black transition-all border theme-border flex items-center justify-center gap-1">🛠️ Szerviz</button>
@@ -360,19 +379,16 @@ async function loadAutok() {
         </div>`).join('');
     }
 
-    // Autó választó legördülő menü (Select) frissítése a sofőrök felületén
     const rendszamSelect = document.getElementById('utRendszam');
     if (rendszamSelect && currentUser.role === 'USER') {
       const elerhetoAutok = autok.filter(a => a.elerhetoAFormDatumon);
       const jelenlegiKivalasztott = rendszamSelect.value;
-
       let opciok = '<option value="">-- Válassz a szabad autók közül --</option>';
       if (elerhetoAutok.length === 0) {
         opciok = '<option value="">-- Nincs szabad autó erre a napra --</option>';
       } else {
         opciok += elerhetoAutok.map(a => `<option value="${a.rendszam}">${a.rendszam} (${a.tipus})</option>`).join('');
       }
-
       if (rendszamSelect.innerHTML !== opciok) {
         rendszamSelect.innerHTML = opciok;
         if (elerhetoAutok.some(a => a.rendszam === jelenlegiKivalasztott)) {
@@ -380,13 +396,7 @@ async function loadAutok() {
         }
       }
     }
-  } catch (e) {
-    console.error("Kritikus hiba lépett fel a loadAutok futtatásakor:", e);
-    document.getElementById('autoList').innerHTML = `
-      <div class="col-span-full py-8 text-center text-red-500 font-bold bg-red-500/5 rounded-2xl border border-red-500/20">
-        Nem sikerült kommunikálni a flottakezelő szerverrel.
-      </div>`;
-  }
+  } catch (e) { }
 }
 
 async function loadUtak() {
@@ -441,6 +451,80 @@ async function loadUtak() {
         </tr>`;
     }).join('');
   } catch (e) { }
+}
+
+// --- JAVÍTOTT BEÉRKEZŐ LISTA ---
+window.loadBeerkezoList = async function () {
+  const container = document.getElementById('beerkezoList');
+  if (!container) return;
+  try {
+    const res = await fetch('http://localhost:3000/api/admin/beerkezo-fuvarok', {
+      headers: { 'Authorization': `Bearer ${window.AppState.token}` }
+    });
+    const fuvarok = await res.json();
+
+    if (fuvarok.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = fuvarok.map(f => `
+      <div onclick="document.getElementById('kerelmekSzuro').scrollIntoView({behavior: 'smooth'})" 
+           class="cursor-pointer p-4 theme-card border border-blue-500/30 hover:border-blue-500 rounded-xl transition-all mb-3 shadow-sm fade-in group">
+        <p class="theme-text text-sm font-bold flex items-center gap-2">
+          <span class="text-blue-500 text-lg">📩</span> 
+          Új fuvarigény engedélyezésre vár: 
+          <span class="font-mono text-blue-500 tracking-widest">${f.auto_rendszam}</span>
+        </p>
+        <p class="text-xs theme-muted mt-2 ml-7">
+          Sofőr: <span class="font-bold theme-text">${f.sofor_nev}</span> | ${f.indulas.split(',')[0]} ➔ ${f.erkezes.split(',')[0]} (${f.tavolsag} km)
+        </p>
+      </div>
+    `).join('');
+  } catch (e) { console.error(e); }
+};
+
+// --- JAVÍTOTT JELENTÉS LETÖLTŐ ---
+window.downloadAdvancedJelentes = function () {
+  const type = document.getElementById('periodusTipus').value;
+  const start = document.getElementById('dateStart').value;
+  const end = document.getElementById('dateEnd').value;
+
+  if (type !== 'ev' && !start) { alert("Kérlek válassz egy induló dátumot!"); return; }
+  if (type === 'intervallum' && !end) { alert("Kérlek válassz egy végdátumot is!"); return; }
+
+  let periodus = start;
+  if (type === 'honap') periodus = start.substring(0, 7);
+  if (type === 'ev') {
+    periodus = start ? start.substring(0, 4) : new Date().getFullYear().toString();
+  }
+  if (type === 'intervallum') periodus = `${start}_${end}`;
+
+  // JAVÍTVA: Kifejezetten a 3000-es portot kell meghívni a letöltéshez, így nem dob ki az oldal!
+  window.location.href = `http://localhost:3000/api/admin/jelentes/${periodus}?token=${window.AppState.token}`;
+};
+
+function toggleDateInputs() {
+  const type = document.getElementById('periodusTipus').value;
+  document.getElementById('dateEnd').classList.toggle('hidden', type !== 'intervallum');
+}
+
+function downloadAdvancedJelentes() {
+  const type = document.getElementById('periodusTipus').value;
+  const start = document.getElementById('dateStart').value;
+  const end = document.getElementById('dateEnd').value;
+
+  if (type !== 'ev' && !start) { alert("Kérlek válassz egy induló dátumot!"); return; }
+  if (type === 'intervallum' && !end) { alert("Kérlek válassz egy végdátumot is!"); return; }
+
+  let periodus = start;
+  if (type === 'honap') periodus = start.substring(0, 7);
+  if (type === 'ev') {
+    periodus = start ? start.substring(0, 4) : new Date().getFullYear().toString();
+  }
+  if (type === 'intervallum') periodus = `${start}_${end}`;
+
+  window.location.href = `/api/admin/jelentes/${periodus}?token=${window.AppState.token}`;
 }
 
 document.addEventListener('click', (e) => {
