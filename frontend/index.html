@@ -10,76 +10,172 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      /* SÖTÉT MÓD */
-      --bg-app: #0f172a;
-      --bg-card: #1e293b;
-      --bg-input: #0f172a;
+      /* SÖTÉT MÓD (Alapértelmezett) */
+      --bg-grad-start: #1e293b;
+      --bg-grad-end: #0f172a;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --border-color: #334155;
-      --hover-bg: rgba(51, 65, 85, 0.5);
-      --shadow-color: rgba(0, 0, 0, 0.3);
+
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-shadow: rgba(0, 0, 0, 0.3);
+
+      --input-bg: rgba(0, 0, 0, 0.2);
+      --btn-bg: rgba(255, 255, 255, 0.05);
+      --btn-hover: rgba(255, 255, 255, 0.15);
+
+      --nav-bg: rgba(15, 23, 42, 0.4);
+
+      --blob-1: #2563eb;
+      /* Kék */
+      --blob-2: #9333ea;
+      /* Lila */
     }
 
     .light-theme {
-      /* VILÁGOS MÓD */
-      --bg-app: #f8fafc;
-      --bg-card: #ffffff;
-      --bg-input: #f1f5f9;
+      /* VILÁGOS MÓD (Tiszta, elegáns üveg) */
+      --bg-grad-start: #f8fafc;
+      --bg-grad-end: #e2e8f0;
       --text-main: #0f172a;
       --text-muted: #64748b;
-      --border-color: #e2e8f0;
-      --hover-bg: #f8fafc;
-      --shadow-color: rgba(0, 0, 0, 0.06);
+
+      --glass-bg: rgba(255, 255, 255, 0.4);
+      /* Erősebb fehér üveg */
+      --glass-border: rgba(255, 255, 255, 0.6);
+      --glass-shadow: rgba(0, 0, 0, 0.05);
+
+      --input-bg: rgba(255, 255, 255, 0.5);
+      --btn-bg: rgba(255, 255, 255, 0.5);
+      --btn-hover: rgba(255, 255, 255, 0.9);
+
+      --nav-bg: rgba(255, 255, 255, 0.4);
+
+      --blob-1: #93c5fd;
+      /* Világoskék */
+      --blob-2: #d8b4fe;
+      /* Világoslila */
     }
 
     body {
-      background-color: var(--bg-app);
+      background: radial-gradient(circle at 50% -20%, var(--bg-grad-start), var(--bg-grad-end));
+      background-attachment: fixed;
       color: var(--text-main);
-      transition: background-color 0.4s, color 0.4s;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      transition: background 0.6s ease, color 0.6s ease;
     }
 
-    /* Kártyák */
-    .theme-card {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
-      box-shadow: 0 10px 30px -10px var(--shadow-color);
-      transition: all 0.3s ease;
+    /* --- MÁGIKUS SZÖVEG JAVÍTÓ VILÁGOS MÓDHOZ --- */
+    /* Mivel a JS-ben benne hagytuk a text-white-ot, ez felülírja világos módban! */
+    .light-theme .text-white {
+      color: #0f172a !important;
     }
 
-    /* Inputok */
+    .light-theme .text-slate-400 {
+      color: #64748b !important;
+    }
+
+    .light-theme .text-slate-300 {
+      color: #475569 !important;
+    }
+
+    /* --- LIQUID GLASS ALAPOK --- */
+    .glass-panel {
+      background: var(--glass-bg) !important;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border) !important;
+      border-radius: 24px;
+      box-shadow: 0 8px 32px 0 var(--glass-shadow);
+      transition: all 0.4s ease;
+    }
+
     .theme-input {
-      background-color: var(--bg-input) !important;
-      border: 1px solid var(--border-color) !important;
+      background: var(--input-bg) !important;
+      backdrop-filter: blur(5px);
+      border: 1px solid var(--glass-border) !important;
       color: var(--text-main) !important;
+      border-radius: 12px !important;
+      transition: all 0.4s ease;
     }
 
-    .theme-text {
+    .theme-input:focus {
+      border-color: rgba(59, 130, 246, 0.5) !important;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .glass-btn {
+      background: var(--btn-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(5px);
+      transition: all 0.3s ease;
+      cursor: pointer;
       color: var(--text-main);
     }
 
-    .theme-muted {
-      color: var(--text-muted);
+    .glass-btn:hover {
+      background: var(--btn-hover);
+      transform: translateY(-2px);
     }
 
-    /* AUDIT TÁBLÁZAT - VÉKONY, EGYSÉGES VONALAK */
+    /* --- FELSŐ SÁV ÜVEG --- */
+    nav,
+    header,
+    .navbar,
+    [class*="bg-slate-900"] {
+      background: var(--nav-bg) !important;
+      backdrop-filter: blur(24px) saturate(180%) !important;
+      -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+      border-bottom: 1px solid var(--glass-border) !important;
+      box-shadow: 0 4px 30px var(--glass-shadow) !important;
+      transition: all 0.4s ease;
+      z-index: 50;
+    }
+
+    /* --- KILÉPÉS GOMB VÉDELME --- */
+    button.bg-red-600,
+    button[onclick*="logout"],
+    .logout-btn {
+      background: rgba(239, 68, 68, 0.15) !important;
+      border: 1px solid rgba(239, 68, 68, 0.3) !important;
+      color: #ef4444 !important;
+      backdrop-filter: blur(5px) !important;
+      border-radius: 12px !important;
+    }
+
+    button.bg-red-600:hover,
+    button[onclick*="logout"]:hover {
+      background: rgba(239, 68, 68, 0.8) !important;
+      color: #ffffff !important;
+    }
+
+    /* Fényes háttér blobok (Dinamikus színnel) */
+    .liquid-blob {
+      position: fixed;
+      width: 50vw;
+      height: 50vw;
+      max-width: 600px;
+      max-height: 600px;
+      filter: blur(120px);
+      z-index: -1;
+      opacity: 0.35;
+      border-radius: 50%;
+      transition: background-color 0.6s ease;
+    }
+
+    .blob-1 {
+      background-color: var(--blob-1);
+    }
+
+    .blob-2 {
+      background-color: var(--blob-2);
+    }
+
+    /* Egyéb */
     table {
       border-collapse: collapse !important;
       width: 100%;
-      border: none !important;
-    }
-
-    #auditLogList tr {
-      border-bottom: 1px solid rgba(148, 163, 184, 0.05) !important;
-      transition: background 0.2s;
-    }
-
-    #auditLogList tr:hover {
-      background-color: rgba(100, 100, 100, 0.05);
-    }
-
-    thead tr {
-      border-bottom: 1px solid rgba(148, 163, 184, 0.08) !important;
     }
 
     th,
@@ -87,7 +183,6 @@
       border: none !important;
     }
 
-    /* Animációk */
     .fade-in {
       animation: fadeIn 0.5s ease-out forwards;
       opacity: 0;
@@ -104,22 +199,21 @@
         transform: translateY(0);
       }
     }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--border-color);
-      border-radius: 10px;
-    }
   </style>
+
+
+  <div class="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+    <div class="liquid-blob blob-1 top-[-10%] left-[-10%]"></div>
+    <div class="liquid-blob blob-2 bottom-[-10%] right-[-10%]"></div>
+  </div>
 
 </head>
 
 <body class="font-sans antialiased">
-
+  <div class="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+    <div class="liquid-blob bg-blue-900 top-[-10%] left-[-10%]"></div>
+    <div class="liquid-blob bg-purple-900 bottom-[-10%] right-[-10%]"></div>
+  </div>
   <header
     class="theme-card !border-x-0 !border-t-0 border-b theme-border px-6 py-4 flex justify-between items-center sticky top-0 z-40 rounded-none shadow-sm">
     <div class="flex items-center gap-3">
