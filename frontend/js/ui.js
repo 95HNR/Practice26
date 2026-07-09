@@ -11,13 +11,9 @@ window.showNotification = function (msg) {
   const container = document.getElementById('alertContainer');
   if (!container) return;
   const note = document.createElement('div');
-
-  // Téma-kompatibilis stílus kék bal oldali kerettel
   note.className = "theme-card border-l-4 border-l-blue-500 p-4 rounded-xl shadow-lg fade-in font-bold flex items-center gap-3 transition-opacity duration-300 mb-3";
   note.innerHTML = `<span class="text-2xl">🔔</span> <span class="theme-text">${msg}</span>`;
-
   container.prepend(note);
-
   setTimeout(() => {
     note.style.opacity = '0';
     setTimeout(() => note.remove(), 300);
@@ -26,13 +22,21 @@ window.showNotification = function (msg) {
 
 if (socket) {
   socket.on('adat_frissites', () => {
+    console.log("🔄 Valós idejű frissítés érkezett a szervertől!");
+    
     if (window.AppState && window.AppState.user && window.AppState.user.role === 'ADMIN') {
+      // BIZTOS AMI BIZTOS: Közvetlen meghívás window.-val
+      if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok(); 
+      
       if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
-      showNotification("Új fuvarigény vagy rendszeresemény történt!");
       if (typeof loadAuditLog === 'function') loadAuditLog();
       if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
       if (typeof renderDashboard === 'function') renderDashboard();
+      if (typeof loadFlottaStatisztika === 'function') loadFlottaStatisztika();
+      if (typeof loadSzervizRiasztasok === 'function') loadSzervizRiasztasok();
+      if (typeof loadSoforRangsor === 'function') loadSoforRangsor();
     }
+    
     if (window.AppState && window.AppState.token) {
       if (typeof loadAutok === 'function') loadAutok();
       if (typeof loadUtak === 'function') loadUtak();
@@ -50,7 +54,6 @@ function toggleTheme() {
   if (typeof costChartInstance !== 'undefined' && costChartInstance) {
     const textColor = isLight ? '#475569' : '#94a3b8';
     const gridColor = isLight ? '#e2e8f0' : '#334155';
-
     costChartInstance.options.plugins.legend.labels.color = textColor;
     costChartInstance.options.scales.x.ticks.color = textColor;
     costChartInstance.options.scales.y.ticks.color = textColor;
@@ -149,7 +152,7 @@ async function openSzervizModal(rendszam) {
   openModalWithAnim('szervizModal');
   try {
     const szervizek = await API.fetchSzerviz(window.AppState.token, rendszam);
-    if (szervizek.length === 0) {
+    if (!Array.isArray(szervizek) || szervizek.length === 0) {
       lista.innerHTML = '<div class="text-center text-slate-500 text-sm py-8 font-bold">Még nincs rögzített szerviz.</div>';
     } else {
       lista.innerHTML = szervizek.map(sz => `
@@ -223,12 +226,67 @@ async function renderDashboard() {
   } catch (e) { }
 }
 
+// --- AUTÓ HOZZÁADÁSA FÜGGVÉNY ---
+window.addAuto = async function(event) {
+  event.preventDefault();
+  
+  // Biztonságos érték kinyerése a km órához
+  const kmInput = document.getElementById('autoAktualisKm');
+  const kmErtek = kmInput && kmInput.value ? parseInt(kmInput.value) : 0;
+
+  // Összegyűjtjük az adatokat, az üres dátumokat null-ra cseréljük
+  const data = {
+    rendszam: document.getElementById('autoRendszam').value.toUpperCase(),
+    tipus: document.getElementById('autoTipus').value,
+    statusz: document.getElementById('autoStatusz').value,
+    aktualis_km: kmErtek,
+    itp_lejarat: document.getElementById('autoItp').value || null,
+    biztositas_lejarat: document.getElementById('autoBiztositas').value || null,
+    utado_lejarat: document.getElementById('autoUtado').value || null
+  };
+
+  try {
+    const res = await fetch('http://localhost:3000/api/admin/autok', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${window.AppState.token}` 
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!res.ok) {
+      const error = await res.json();
+      alert("Hiba az autó hozzáadásakor: " + (error.hiba || "Ellenőrizd az adatokat!"));
+      return;
+    }
+    
+    alert("✅ Autó sikeresen hozzáadva a flottához!");
+    event.target.reset(); // Űrlap ürítése
+    
+    // --- VALÓS IDEJŰ FRISSÍTÉSEK KÉNYSZERÍTÉSE AZONNAL ---
+    if (typeof loadAutok === 'function') loadAutok(); 
+    if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok(); 
+    // -----------------------------------------------------
+
+  } catch(e) { 
+    console.error(e); 
+    alert("Hálózati hiba történt.");
+  }
+};
+
 async function loadAuditLog() {
   const token = window.AppState.token;
   if (!token || window.AppState.user.role !== 'ADMIN') return;
   const container = document.getElementById('auditLogList');
   try {
     const logs = await API.fetchAudit(token);
+
+    if (!Array.isArray(logs) || logs.length === 0) {
+      container.innerHTML = '<tr><td colspan="4" class="py-8 text-center theme-muted font-bold">Még nincsenek bejegyzések az audit naplóban.</td></tr>';
+      return;
+    }
+
     container.innerHTML = logs.map((l, index) => `
       <tr class="transition-all duration-300 fade-in border-b border-slate-700/20" style="animation-delay: ${index * 50}ms">
         <td class="py-5 px-6 text-[11px] theme-muted font-mono font-black">${new Date(l.datum).toLocaleString()}</td>
@@ -240,7 +298,9 @@ async function loadAuditLog() {
 }
 
 async function renderUI() {
-  const token = window.AppState.token; const currentUser = window.AppState.user;
+  const token = window.AppState.token;
+  const currentUser = window.AppState.user;
+
   if (!token) {
     document.getElementById('loginSection').classList.remove('hidden');
     document.getElementById('adminSection').classList.add('hidden');
@@ -264,16 +324,18 @@ async function renderUI() {
     document.getElementById('adminSection').classList.add('fade-in');
     document.getElementById('kliensHeader').classList.add('hidden');
     document.getElementById('soforUrlapContainer').classList.add('hidden');
-    try {
-      const riasztasok = await API.fetchAlerts(token);
-      if (Array.isArray(riasztasok) && riasztasok.length > 0) {
-        document.getElementById('alertContainer').innerHTML = riasztasok.map(r => {
-          const isWarning = r.includes('⚠️');
-          return `<div class="${isWarning ? 'bg-amber-900/40 border-amber-500 text-amber-200' : 'bg-red-900/40 border-red-500 text-red-200'} border-l-4 p-5 rounded-2xl text-sm font-bold mb-4 flex items-center shadow-lg backdrop-blur-md fade-in"><span class="mr-4 text-3xl">${isWarning ? '⚠️' : '🚨'}</span> ${r.replace('⚠️ ', '').replace('🚨 ', '')}</div>`;
-        }).join('');
-      }
-    } catch (e) { }
-    loadAktivFlotta(); renderDashboard(); loadAuditLog(); loadBeerkezoList(); // <-- Beérkező lista hívása itt
+
+    // --- ITT AZ ÚJÍTÁS: A hosszú kód helyett csak meghívjuk az új függvényt ---
+    if (typeof loadRiasztasok === 'function') loadRiasztasok();
+    // -------------------------------------------------------------------------
+
+    if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
+    if (typeof renderDashboard === 'function') renderDashboard();
+    if (typeof loadAuditLog === 'function') loadAuditLog();
+    if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
+    if (typeof loadFlottaStatisztika === 'function') loadFlottaStatisztika();
+    if (typeof loadSzervizRiasztasok === 'function') loadSzervizRiasztasok();
+    if (typeof loadSoforRangsor === 'function') loadSoforRangsor();
   } else {
     document.getElementById('adminSection').classList.add('hidden');
     document.getElementById('kliensHeader').classList.remove('hidden');
@@ -285,7 +347,9 @@ async function renderUI() {
   resetDistanceField(true, true);
   const datumInput = document.getElementById('utDatum');
   if (datumInput && !datumInput.value) datumInput.value = new Date().toISOString().split('T')[0];
-  loadAutok(); loadUtak();
+
+  if (typeof loadAutok === 'function') loadAutok();
+  if (typeof loadUtak === 'function') loadUtak();
 }
 
 function formatDateStr(isoStr) { return isoStr ? isoStr.split('T')[0] : 'Nincs adat'; }
@@ -399,6 +463,60 @@ async function loadAutok() {
   } catch (e) { }
 }
 
+window.loadFlottaStatisztika = async function () {
+  const container = document.getElementById('flottaRangsor');
+  if (!container) return;
+
+  try {
+    const res = await fetch('http://localhost:3000/api/admin/statisztika/flotta', {
+      headers: { 'Authorization': `Bearer ${window.AppState.token}` }
+    });
+    const stats = await res.json();
+
+    const sortedStats = Object.entries(stats).sort((a, b) => b[1].km - a[1].km);
+
+    if (sortedStats.length === 0) {
+      container.innerHTML = `<div class="col-span-full text-center py-6 theme-muted text-sm font-bold border-2 border-dashed theme-border rounded-2xl">Még nincs teljesített fuvar a rendszerben.</div>`;
+      return;
+    }
+
+    container.innerHTML = sortedStats.map(([rendszam, data], index) => `
+      <div class="flex flex-col p-4 theme-card border border-blue-500/10 hover:border-blue-500/30 transition shadow-sm fade-in" style="animation-delay: ${index * 50}ms">
+        <div class="flex justify-between items-center mb-2">
+          <span class="font-mono font-black text-blue-500 tracking-widest text-lg">${rendszam}</span>
+          <span class="text-xs bg-slate-500/10 text-slate-400 px-2 py-1 rounded-md font-bold uppercase">${data.db} fuvar</span>
+        </div>
+        <div class="flex items-end gap-1">
+          <span class="font-black theme-text text-2xl">${data.km.toFixed(1)}</span>
+          <span class="text-sm theme-muted font-bold mb-1">km</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) { console.error("Statisztika hiba:", e); }
+};
+
+window.loadRiasztasok = async function () {
+  const token = window.AppState.token;
+  if (!token || window.AppState.user.role !== 'ADMIN') return;
+  
+  const container = document.getElementById('alertContainer');
+  if (!container) return;
+
+  try {
+    const riasztasok = await API.fetchAlerts(token);
+    if (Array.isArray(riasztasok) && riasztasok.length > 0) {
+      container.innerHTML = riasztasok.map(r => {
+        const isWarning = r.includes('⚠️');
+        return `<div class="${isWarning ? 'bg-amber-900/40 border-amber-500 text-amber-200' : 'bg-red-900/40 border-red-500 text-red-200'} border-l-4 p-5 rounded-2xl text-sm font-bold mb-4 flex items-center shadow-lg backdrop-blur-md fade-in"><span class="mr-4 text-3xl">${isWarning ? '⚠️' : '🚨'}</span> ${r.replace('⚠️ ', '').replace('🚨 ', '')}</div>`;
+      }).join('');
+    } else {
+      container.innerHTML = ''; // Ha mindent megoldottál, eltűnik a doboz
+    }
+  } catch (e) { 
+    console.error("Hiba a riasztások betöltésekor:", e); 
+  }
+};
+
 async function loadUtak() {
   const token = window.AppState.token; const currentUser = window.AppState.user; if (!token || !currentUser) return;
   const szuro = document.getElementById('kerelmekSzuro')?.value || '';
@@ -453,7 +571,6 @@ async function loadUtak() {
   } catch (e) { }
 }
 
-// --- JAVÍTOTT BEÉRKEZŐ LISTA ---
 window.loadBeerkezoList = async function () {
   const container = document.getElementById('beerkezoList');
   if (!container) return;
@@ -463,35 +580,64 @@ window.loadBeerkezoList = async function () {
     });
     const fuvarok = await res.json();
 
-    if (fuvarok.length === 0) {
-      container.innerHTML = '';
+    if (!Array.isArray(fuvarok) || fuvarok.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-6 theme-muted text-sm font-bold border-2 border-dashed theme-border rounded-2xl mb-4">
+          ✅ Jelenleg nincs engedélyezésre váró fuvarigény.
+        </div>`;
       return;
     }
 
     container.innerHTML = fuvarok.map(f => `
-      <div onclick="document.getElementById('kerelmekSzuro').scrollIntoView({behavior: 'smooth'})" 
-           class="cursor-pointer p-4 theme-card border border-blue-500/30 hover:border-blue-500 rounded-xl transition-all mb-3 shadow-sm fade-in group">
-        <p class="theme-text text-sm font-bold flex items-center gap-2">
-          <span class="text-blue-500 text-lg">📩</span> 
-          Új fuvarigény engedélyezésre vár: 
-          <span class="font-mono text-blue-500 tracking-widest">${f.auto_rendszam}</span>
-        </p>
-        <p class="text-xs theme-muted mt-2 ml-7">
-          Sofőr: <span class="font-bold theme-text">${f.sofor_nev}</span> | ${f.indulas.split(',')[0]} ➔ ${f.erkezes.split(',')[0]} (${f.tavolsag} km)
-        </p>
+      <div class="p-4 theme-card border border-blue-500/30 hover:border-blue-500 rounded-xl transition-all mb-3 shadow-sm fade-in flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="w-full md:w-auto text-left">
+          <p class="theme-text text-sm font-bold flex items-center gap-2">
+            <span class="text-blue-500 text-lg">📩</span> 
+            Új fuvarigény: <span class="font-mono text-blue-500 tracking-widest">${f.auto_rendszam}</span>
+          </p>
+          <p class="text-xs theme-muted mt-1 md:ml-7">
+            Sofőr: <span class="font-bold theme-text">${f.sofor_nev}</span> | ${f.indulas.split(',')[0]} ➔ ${f.erkezes.split(',')[0]} (${f.tavolsag} km)
+          </p>
+        </div>
+        <div class="flex gap-2 w-full md:w-auto">
+           <button onclick="biralUtFizikai(${f.id}, 'JOVAHAGYOTT')" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-lg text-xs font-black transition shadow-lg shadow-emerald-500/20">JÓVÁHAGYÁS</button>
+           <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" class="flex-1 md:flex-none bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-lg text-xs font-black transition shadow-lg shadow-red-500/20">ELVETÉS</button>
+        </div>
       </div>
     `).join('');
   } catch (e) { console.error(e); }
 };
 
-// --- JAVÍTOTT JELENTÉS LETÖLTŐ ---
-window.downloadAdvancedJelentes = function () {
+window.downloadAdvancedJelentes = function (event) {
+  const e = event || window.event;
+  let btn = e ? e.currentTarget : null;
+  let originalText = "📥 CSV Letöltése";
+
+  if (btn) {
+    originalText = btn.innerHTML;
+    btn.innerHTML = "⏳ Generálás...";
+    btn.disabled = true;
+    btn.classList.add('opacity-70', 'cursor-not-allowed');
+  }
+
   const type = document.getElementById('periodusTipus').value;
   const start = document.getElementById('dateStart').value;
   const end = document.getElementById('dateEnd').value;
 
-  if (type !== 'ev' && !start) { alert("Kérlek válassz egy induló dátumot!"); return; }
-  if (type === 'intervallum' && !end) { alert("Kérlek válassz egy végdátumot is!"); return; }
+  const resetBtn = () => {
+    if (btn) { btn.innerHTML = originalText; btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-not-allowed'); }
+  };
+
+  if (type !== 'ev' && !start) {
+    alert("Kérlek válassz egy induló dátumot!");
+    resetBtn();
+    return;
+  }
+  if (type === 'intervallum' && !end) {
+    alert("Kérlek válassz egy végdátumot is!");
+    resetBtn();
+    return;
+  }
 
   let periodus = start;
   if (type === 'honap') periodus = start.substring(0, 7);
@@ -500,8 +646,8 @@ window.downloadAdvancedJelentes = function () {
   }
   if (type === 'intervallum') periodus = `${start}_${end}`;
 
-  // JAVÍTVA: Kifejezetten a 3000-es portot kell meghívni a letöltéshez, így nem dob ki az oldal!
   window.location.href = `http://localhost:3000/api/admin/jelentes/${periodus}?token=${window.AppState.token}`;
+  setTimeout(resetBtn, 2000);
 };
 
 function toggleDateInputs() {
@@ -509,23 +655,45 @@ function toggleDateInputs() {
   document.getElementById('dateEnd').classList.toggle('hidden', type !== 'intervallum');
 }
 
-function downloadAdvancedJelentes() {
-  const type = document.getElementById('periodusTipus').value;
-  const start = document.getElementById('dateStart').value;
-  const end = document.getElementById('dateEnd').value;
-
-  if (type !== 'ev' && !start) { alert("Kérlek válassz egy induló dátumot!"); return; }
-  if (type === 'intervallum' && !end) { alert("Kérlek válassz egy végdátumot is!"); return; }
-
-  let periodus = start;
-  if (type === 'honap') periodus = start.substring(0, 7);
-  if (type === 'ev') {
-    periodus = start ? start.substring(0, 4) : new Date().getFullYear().toString();
+window.loadSzervizRiasztasok = async function () {
+  const container = document.getElementById('szervizRiasztasok');
+  if (!container) return;
+  try {
+    const res = await fetch('http://localhost:3000/api/admin/szerviz-figyelmeztetesek', { headers: { 'Authorization': `Bearer ${window.AppState.token}` } });
+    const list = await res.json();
+    if (!Array.isArray(list) || list.length === 0) {
+      container.innerHTML = '<div class="text-sm p-4 text-center theme-muted font-bold border-2 border-dashed theme-border rounded-xl">Minden jármű szervize rendben van.</div>';
+      return;
+    }
+    container.innerHTML = list.map(r => `
+      <div class="flex justify-between text-sm p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+        <span class="font-black text-amber-500">${r.rendszam}</span>
+        <span class="text-amber-200">${r.hatralevo} km maradt</span>
+      </div>`).join('');
+  } catch (e) {
+    container.innerHTML = '<div class="text-sm p-3 text-red-500">Hiba az adatok betöltésekor.</div>';
   }
-  if (type === 'intervallum') periodus = `${start}_${end}`;
+};
 
-  window.location.href = `/api/admin/jelentes/${periodus}?token=${window.AppState.token}`;
-}
+window.loadSoforRangsor = async function () {
+  const container = document.getElementById('soforRangsor');
+  if (!container) return;
+  try {
+    const res = await fetch('http://localhost:3000/api/admin/statisztika/soforok', { headers: { 'Authorization': `Bearer ${window.AppState.token}` } });
+    const list = await res.json();
+    if (!Array.isArray(list) || list.length === 0) {
+      container.innerHTML = '<div class="text-sm p-4 text-center theme-muted font-bold border-2 border-dashed theme-border rounded-xl">Nincs elegendő adat a rangsorhoz.</div>';
+      return;
+    }
+    container.innerHTML = list.map((s, i) => `
+      <div class="flex justify-between items-center p-3 theme-input rounded-lg border border-blue-500/10">
+        <span class="font-bold theme-text">${i + 1}. ${s.nev}</span>
+        <span class="font-black text-emerald-500 text-lg">${s.atlagFogy} <span class="text-xs font-bold text-emerald-500/70">L/100km</span></span>
+      </div>`).join('');
+  } catch (e) {
+    container.innerHTML = '<div class="text-sm p-3 text-red-500">Hiba a betöltéskor.</div>';
+  }
+};
 
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.relative')) {

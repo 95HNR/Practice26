@@ -165,14 +165,28 @@ app.patch('/api/admin/autok/:rendszam', authenticateToken, requireAdmin, async (
 
 app.post('/api/admin/autok', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { rendszam, tipus, statusz, itp_lejarat, biztositas_lejarat, utado_lejarat } = req.body;
+    const { rendszam, tipus, statusz, itp_lejarat, biztositas_lejarat, utado_lejarat, aktualis_km } = req.body;
+    
     const ujAuto = await prisma.auto.create({
-      data: { rendszam, tipus, statusz: statusz || 'ELERHETO', itp_lejarat: itp_lejarat ? new Date(itp_lejarat) : null, biztositas_lejarat: biztositas_lejarat ? new Date(biztositas_lejarat) : null, utado_lejarat: utado_lejarat ? new Date(utado_lejarat) : null }
+      data: { 
+        rendszam, 
+        tipus, 
+        statusz: statusz || 'ELERHETO', 
+        aktualis_km: parseInt(aktualis_km) || 0, 
+        itp_lejarat: itp_lejarat ? new Date(itp_lejarat) : null, 
+        biztositas_lejarat: biztositas_lejarat ? new Date(biztositas_lejarat) : null, 
+        utado_lejarat: utado_lejarat ? new Date(utado_lejarat) : null 
+      }
     });
+    
     await logAudit(req.user.username, 'Létrehozás', `Új autó: ${rendszam}`);
     io.emit('adat_frissites');
     res.status(201).json(ujAuto);
-  } catch (error) { res.status(400).json({ hiba: 'Létezik!' }); }
+  } catch (error) { 
+    console.error("--- VALÓDI HIBA ---", error); 
+    // ITT A LÉNYEG: Ezt küldjük vissza a böngészőnek
+    res.status(400).json({ hiba: error.message }); 
+  }
 });
 
 app.get('/api/admin/szerviz/:rendszam', authenticateToken, requireAdmin, async (req, res) => {
@@ -302,6 +316,62 @@ app.get('/api/admin/audit', authenticateToken, requireAdmin, async (req, res) =>
     const logs = await prisma.auditLog.findMany({ orderBy: { datum: 'desc' }, take: 20 });
     res.json(logs);
   } catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
+});
+
+// --- ÚJ: Flotta statisztika (Kihasználtság) ---
+app.get('/api/admin/statisztika/flotta', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const utak = await prisma.ut.findMany({ 
+      where: { status: 'TELJESITVE' },
+      select: { auto_rendszam: true, tavolsag: true }
+    });
+
+    const stats = {};
+    utak.forEach(u => {
+      if (!stats[u.auto_rendszam]) stats[u.auto_rendszam] = { db: 0, km: 0 };
+      stats[u.auto_rendszam].db += 1;
+      stats[u.auto_rendszam].km += u.tavolsag;
+    });
+
+    res.json(stats);
+  } catch (error) { 
+    console.error(error);
+    res.status(500).json({ hiba: 'Hiba a statisztika lekérésekor.' }); 
+  }
+});
+
+// --- Járművek: Szervizfigyelmeztetés (km alapú) ---
+app.get('/api/admin/szerviz-figyelmeztetesek', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const autok = await prisma.auto.findMany({ include: { szerviz: { orderBy: { kilometer: 'desc' }, take: 1 } } });
+    const riasztasok = autok.map(a => {
+      const utolsoSzerviz = a.szerviz[0] ? a.szerviz[0].kilometer : 0;
+      // Feltételezzük, hogy 15.000 km a periódus
+      const hatralevo = 15000 - (a.aktualis_km - utolsoSzerviz); 
+      return { rendszam: a.rendszam, hatralevo };
+    }).filter(r => r.hatralevo < 2000); // 2000 km-nél már figyelmeztet
+    res.json(riasztasok);
+  } catch (e) { res.status(500).json({ hiba: 'Hiba.' }); }
+});
+
+// --- Sofőrök: Fogyasztási rangsor ---
+app.get('/api/admin/statisztika/soforok', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const utak = await prisma.ut.findMany({ where: { status: 'TELJESITVE' } });
+    const stats = {};
+    utak.forEach(u => {
+      if (!stats[u.sofor_nev]) stats[u.sofor_nev] = { km: 0, fogy: 0 };
+      stats[u.sofor_nev].km += u.tavolsag;
+      stats[u.sofor_nev].fogy += u.fogyasztas;
+    });
+
+    const eredmeny = Object.entries(stats).map(([nev, data]) => ({
+      nev,
+      atlagFogy: data.km > 0 ? (data.fogy / (data.km / 100)).toFixed(2) : 0
+    })).sort((a, b) => a.atlagFogy - b.atlagFogy);
+
+    res.json(eredmeny);
+  } catch (e) { res.status(500).json({ hiba: 'Hiba.' }); }
 });
 
 const PORT = 3000;

@@ -20,7 +20,8 @@
     "express": "^5.2.1",
     "nodemon": "^3.1.14",
     "pg": "^8.22.0",
-    "prisma": "^7.8.0"
+    "prisma": "^7.8.0",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "vite": "^8.1.3"

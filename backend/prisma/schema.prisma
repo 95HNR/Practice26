@@ -18,19 +18,20 @@ model Auto {
   rendszam           String    @id
   tipus              String
   statusz            String    @default("ELERHETO")
+  aktualis_km        Int       @default(0)
   itp_lejarat        DateTime?
   biztositas_lejarat DateTime?
   utado_lejarat      DateTime?
   utak               Ut[]
-  szervizek          Szerviz[]
+  szerviz            Szerviz[]
 }
 
 model Szerviz {
   id            Int      @id @default(autoincrement())
   auto_rendszam String
   datum         DateTime
-  leiras        String
   kilometer     Int
+  leiras        String
   auto          Auto     @relation(fields: [auto_rendszam], references: [rendszam], onDelete: Cascade)
 }
 
@@ -48,11 +49,10 @@ model Ut {
   auto          Auto     @relation(fields: [auto_rendszam], references: [rendszam], onDelete: Cascade)
 }
 
-// --- ÚJ: AUDIT LOG TÁBLA ---
 model AuditLog {
-  id          Int      @id @default(autoincrement())
-  datum       DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  datum      DateTime @default(now())
   felhasznalo String
-  muvelet     String
-  reszletek   String
+  muvelet    String
+  reszletek  String
 }

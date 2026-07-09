@@ -272,7 +272,7 @@
           <input type="date" id="dateStart" class="theme-input p-2.5 rounded-xl text-sm font-bold">
           <input type="date" id="dateEnd" class="hidden theme-input p-2.5 rounded-xl text-sm font-bold">
 
-          <button onclick="downloadAdvancedJelentes()"
+          <button onclick="downloadAdvancedJelentes(event)"
             class="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl text-sm font-black text-white shadow-lg shadow-blue-600/30 flex items-center gap-2 transition">
             📥 CSV Letöltése
           </button>
@@ -291,15 +291,26 @@
         <div id="aktivFlottaList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">Betöltés...</div>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="theme-card p-6 sm:p-8 rounded-3xl">
+        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>🏆</span> Flotta kihasználtsági
+          rangsor</h4>
+        <div id="flottaRangsor" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="col-span-full text-center py-6 theme-muted text-sm font-bold">Betöltés...</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+
         <div class="theme-card p-6 sm:p-8 rounded-3xl">
           <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>➕</span> Új Autó Regisztrálása
           </h4>
           <form onsubmit="addAuto(event)" class="space-y-5">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
               <input type="text" id="autoRendszam" placeholder="RENDSZÁM" required
                 class="theme-input rounded-xl p-3.5 w-full uppercase font-black tracking-widest text-center">
-              <input type="text" id="autoTipus" placeholder="Típus (pl. Dacia)" required
+              <input type="text" id="autoTipus" placeholder="Típus (pl. Audi)" required
+                class="theme-input rounded-xl p-3.5 w-full font-medium text-center">
+              <input type="number" id="autoAktualisKm" placeholder="Aktuális km" required
                 class="theme-input rounded-xl p-3.5 w-full font-medium text-center">
             </div>
             <div class="grid grid-cols-3 gap-3">
@@ -339,6 +350,7 @@
             </button>
           </form>
         </div>
+
       </div>
 
       <div class="theme-card p-6 sm:p-8 rounded-3xl">
@@ -371,8 +383,7 @@
       </div>
 
       <div id="soforUrlapContainer" class="theme-card p-6 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden">
-        <div class="absolute top-0 left-0 w-2 h-full bg-emerald-500"></div>
-        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 pl-2 theme-text"><span>✍️</span> Új Fuvarigény Leadása
+        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>✍️</span> Új Fuvarigény Leadása
         </h4>
         <form onsubmit="addUt(event)" class="grid grid-cols-1 md:grid-cols-5 gap-5">
           <select id="utRendszam" required class="theme-input rounded-xl p-4 w-full font-bold">
@@ -380,16 +391,16 @@
           </select>
           <input type="date" id="utDatum" required onchange="loadAutok()"
             class="theme-input rounded-xl p-4 w-full font-mono">
-          <div class="relative"><input type="text" id="utIndulas" placeholder="Indulás Helyszíne" required
-              autocomplete="off" oninput="searchOSM(this, 'indulasList')"
-              class="theme-input rounded-xl p-4 w-full font-medium">
+          <div class="relative">
+            <input type="text" id="utIndulas" placeholder="Indulás Helyszíne" required autocomplete="off"
+              oninput="searchOSM(this, 'indulasList')" class="theme-input rounded-xl p-4 w-full font-medium">
             <div id="indulasList"
               class="absolute z-50 left-0 right-0 top-full mt-2 theme-card rounded-2xl shadow-2xl hidden max-h-60 overflow-y-auto border theme-border">
             </div>
           </div>
-          <div class="relative"><input type="text" id="utErkezes" placeholder="Érkezés Célpontja" required
-              autocomplete="off" oninput="searchOSM(this, 'erkezesList')"
-              class="theme-input rounded-xl p-4 w-full font-medium">
+          <div class="relative">
+            <input type="text" id="utErkezes" placeholder="Érkezés Célpontja" required autocomplete="off"
+              oninput="searchOSM(this, 'erkezesList')" class="theme-input rounded-xl p-4 w-full font-medium">
             <div id="erkezesList"
               class="absolute z-50 left-0 right-0 top-full mt-2 theme-card rounded-2xl shadow-2xl hidden max-h-60 overflow-y-auto border theme-border">
             </div>
@@ -397,8 +408,9 @@
           <input type="text" id="utTav" placeholder="Távolság" readonly
             class="theme-input rounded-xl p-4 w-full text-emerald-500 font-black text-center text-lg">
           <button type="submit"
-            class="md:col-span-5 bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 transition text-lg mt-2">Igény
-            Beküldése Engedélyezésre</button>
+            class="md:col-span-5 bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 transition text-lg mt-2">
+            Igény Beküldése Engedélyezésre
+          </button>
         </form>
       </div>
 
@@ -440,6 +452,7 @@
 
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="js/ui.js"></script>
 </body>
 
