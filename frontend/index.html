@@ -27,20 +27,17 @@
       --nav-bg: rgba(15, 23, 42, 0.4);
 
       --blob-1: #2563eb;
-      /* Kék */
       --blob-2: #9333ea;
-      /* Lila */
     }
 
     .light-theme {
-      /* VILÁGOS MÓD (Tiszta, elegáns üveg) */
+      /* VILÁGOS MÓD */
       --bg-grad-start: #f8fafc;
       --bg-grad-end: #e2e8f0;
       --text-main: #0f172a;
       --text-muted: #64748b;
 
       --glass-bg: rgba(255, 255, 255, 0.4);
-      /* Erősebb fehér üveg */
       --glass-border: rgba(255, 255, 255, 0.6);
       --glass-shadow: rgba(0, 0, 0, 0.05);
 
@@ -51,9 +48,7 @@
       --nav-bg: rgba(255, 255, 255, 0.4);
 
       --blob-1: #93c5fd;
-      /* Világoskék */
       --blob-2: #d8b4fe;
-      /* Világoslila */
     }
 
     body {
@@ -65,8 +60,6 @@
       transition: background 0.6s ease, color 0.6s ease;
     }
 
-    /* --- MÁGIKUS SZÖVEG JAVÍTÓ VILÁGOS MÓDHOZ --- */
-    /* Mivel a JS-ben benne hagytuk a text-white-ot, ez felülírja világos módban! */
     .light-theme .text-white {
       color: #0f172a !important;
     }
@@ -79,7 +72,8 @@
       color: #475569 !important;
     }
 
-    /* --- LIQUID GLASS ALAPOK --- */
+    /* LIQUID GLASS ALAPOK */
+    /* --- PRÉMIUM LIQUID GLASS --- */
     .glass-panel {
       background: var(--glass-bg) !important;
       backdrop-filter: blur(20px);
@@ -87,7 +81,15 @@
       border: 1px solid var(--glass-border) !important;
       border-radius: 24px;
       box-shadow: 0 8px 32px 0 var(--glass-shadow);
-      transition: all 0.4s ease;
+      
+      /* Visszatettük a selymes átmeneteket */
+      transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+      will-change: transform, background-color;
+    }
+
+    .glass-panel:hover {
+      transform: translateY(-5px); /* Enyhe lebegés hoverkor */
+      box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
     }
 
     .theme-input {
@@ -119,7 +121,7 @@
       transform: translateY(-2px);
     }
 
-    /* --- FELSŐ SÁV ÜVEG --- */
+    /* FELSŐ SÁV ÜVEG */
     nav,
     header,
     .navbar,
@@ -133,7 +135,7 @@
       z-index: 50;
     }
 
-    /* --- KILÉPÉS GOMB VÉDELME --- */
+    /* KILÉPÉS GOMB VÉDELME */
     button.bg-red-600,
     button[onclick*="logout"],
     .logout-btn {
@@ -150,7 +152,7 @@
       color: #ffffff !important;
     }
 
-    /* Fényes háttér blobok (Dinamikus színnel) */
+    /* Fényes háttér blobok */
     .liquid-blob {
       position: fixed;
       width: 50vw;
@@ -172,7 +174,19 @@
       background-color: var(--blob-2);
     }
 
-    /* Egyéb */
+    /* --- GÖRGETÉSI ANIMÁCIÓ (GPU) --- */
+    .reveal {
+      opacity: 0;
+      transform: translate3d(0, 20px, 0); 
+      transition: opacity 0.8s cubic-bezier(0.165, 0.84, 0.44, 1),
+                  transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+    
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     table {
       border-collapse: collapse !important;
       width: 100%;
@@ -547,7 +561,6 @@
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="js/ui.js"></script>
-</body>
+  <script src="/js/ui.js"></script></body>
 
 </html>

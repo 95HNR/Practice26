@@ -39,6 +39,29 @@ if (socket) {
   });
 }
 
+// --- SCROLL REVEAL ANIMÁCIÓ TÖKÉLETESÍTVE ---
+window.initScrollReveal = function() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('active');
+      } else {
+        // EZ A TITOK: Ha kimegy a képernyőről, levesszük az aktív osztályt,
+        // így amikor újra odagörgetsz, megint be fog úszni!
+        entry.target.classList.remove('active');
+      }
+    });
+  }, { threshold: 0.05, rootMargin: "0px 0px -20px 0px" });
+
+  // BŐVÍTETT LISTA: Minden kártya, minden táblázatsor és a főbb dobozok
+  document.querySelectorAll('.glass-panel, tbody tr, form').forEach(el => {
+    if (!el.classList.contains('reveal')) {
+      el.classList.add('reveal');
+    }
+    observer.observe(el);
+  });
+};
+
 // --- TÉMA VÁLTÓ LOGIKA ---
 function toggleTheme() {
   const body = document.body;
@@ -123,7 +146,7 @@ function openModalWithAnim(modalId) {
   const modal = document.getElementById(modalId);
   modal.classList.remove('hidden');
   const card = modal.querySelector('.glass-panel');
-  if (card) card.classList.add('fade-in');
+  if (card) { card.classList.add('fade-in'); }
 }
 
 function openEditModal(rendszam) {
@@ -295,6 +318,7 @@ window.loadRiasztasok = async function () {
                   <span class="mr-4 text-3xl">${isWarning ? '⚠️' : '🚨'}</span> ${r.replace('⚠️ ', '').replace('🚨 ', '')}
                 </div>`;
       }).join('');
+      initScrollReveal(); // Aktiváljuk a reveal-t az új kártyákon
     } else {
       container.innerHTML = '';
     }
@@ -367,10 +391,11 @@ async function loadAktivFlotta() {
       <p class="font-black text-white text-lg tracking-tight">A flotta épp pihen</p>
       <p class="text-slate-400 text-sm mt-2 font-medium">Jelenleg nincs aktív kirendelés.</p>
     </div>`;
+      initScrollReveal();
       return;
     }
     container.innerHTML = aktivUtak.map((u, i) => `
-      <div class="glass-panel p-5 flex flex-col gap-4 fade-in hover:bg-white/5 transition-all" style="animation-delay: ${i * 100}ms">
+      <div class="glass-panel p-5 flex flex-col gap-4 hover:bg-white/5 transition-all">
         <div class="flex justify-between items-start">
           <div class="font-black text-white flex items-center gap-2">🚘 <span class="font-mono text-blue-400 text-xl tracking-widest">${u.auto_rendszam}</span></div>
           <span class="flex items-center gap-1.5 text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/50 px-2.5 py-1 rounded-md tracking-widest font-black uppercase">
@@ -384,6 +409,7 @@ async function loadAktivFlotta() {
           <span class="truncate max-w-[100px] text-right" title="${u.erkezes}">${u.erkezes.split(',')[0]}</span>
         </div>
       </div>`).join('');
+    initScrollReveal();
   } catch (e) { }
 }
 
@@ -410,7 +436,7 @@ async function loadAutok() {
         </div>`;
     } else {
       autoListContainer.innerHTML = autok.map((a, i) => `
-        <div class="glass-panel group p-6 flex flex-col justify-between fade-in transition-all duration-500 hover:-translate-y-1 hover:bg-white/5" style="animation-delay: ${i * 50}ms">
+        <div class="glass-panel group p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/5">
           <div class="flex justify-between items-start mb-6">
             <div>
               <div class="font-black text-white text-2xl tracking-widest font-mono drop-shadow-sm select-all">${a.rendszam}</div>
@@ -434,6 +460,8 @@ async function loadAutok() {
           </div>` : ''}
         </div>`).join('');
     }
+
+    initScrollReveal(); // Aktiváljuk a reveal-t az új kártyákon
 
     const rendszamSelect = document.getElementById('utRendszam');
     if (rendszamSelect && currentUser.role === 'USER') {
@@ -460,10 +488,11 @@ window.loadFlottaStatisztika = async function () {
 
     if (sortedStats.length === 0) {
       container.innerHTML = `<div class="col-span-full text-center py-6 text-slate-400 text-sm font-bold glass-panel border-2 border-dashed border-white/10 rounded-2xl">Még nincs teljesített fuvar a rendszerben.</div>`;
+      initScrollReveal();
       return;
     }
     container.innerHTML = sortedStats.map(([rendszam, data], index) => `
-      <div class="glass-panel flex flex-col p-4 transition hover:bg-white/5 fade-in" style="animation-delay: ${index * 50}ms">
+      <div class="glass-panel flex flex-col p-4 transition hover:bg-white/5">
         <div class="flex justify-between items-center mb-2">
           <span class="font-mono font-black text-blue-400 tracking-widest text-lg">${rendszam}</span>
           <span class="text-xs bg-white/10 text-slate-300 px-2 py-1 rounded-md font-bold uppercase">${data.db} fuvar</span>
@@ -473,6 +502,7 @@ window.loadFlottaStatisztika = async function () {
           <span class="text-sm text-slate-400 font-bold mb-1">km</span>
         </div>
       </div>`).join('');
+    initScrollReveal();
   } catch (e) { console.error(e); }
 };
 
@@ -538,10 +568,11 @@ window.loadBeerkezoList = async function () {
     const fuvarok = await res.json();
     if (!Array.isArray(fuvarok) || fuvarok.length === 0) {
       container.innerHTML = `<div class="text-center py-6 text-slate-400 text-sm font-bold glass-panel border-2 border-dashed border-white/10 rounded-2xl mb-4">✅ Jelenleg nincs engedélyezésre váró fuvarigény.</div>`;
+      initScrollReveal();
       return;
     }
     container.innerHTML = fuvarok.map(f => `
-      <div class="glass-panel p-4 hover:bg-white/5 transition-all mb-3 fade-in flex flex-col md:flex-row justify-between items-center gap-4 border-l-4 border-l-blue-500">
+      <div class="glass-panel p-4 hover:bg-white/5 transition-all mb-3 flex flex-col md:flex-row justify-between items-center gap-4 border-l-4 border-l-blue-500">
         <div class="w-full md:w-auto text-left">
           <p class="text-white text-sm font-bold flex items-center gap-2">
             <span class="text-blue-400 text-lg">📩</span> Új fuvarigény: <span class="font-mono text-blue-400 tracking-widest">${f.auto_rendszam}</span>
@@ -555,6 +586,7 @@ window.loadBeerkezoList = async function () {
            <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" class="glass-btn flex-1 md:flex-none bg-red-500/20 text-red-400 hover:bg-red-500/40 px-5 py-2.5 rounded-lg text-xs font-black">ELVETÉS</button>
         </div>
       </div>`).join('');
+    initScrollReveal();
   } catch (e) { console.error(e); }
 };
 
@@ -585,13 +617,16 @@ window.loadSzervizRiasztasok = async function () {
     const res = await fetch('http://localhost:3000/api/admin/szerviz-figyelmeztetesek', { headers: { 'Authorization': `Bearer ${window.AppState.token}` } });
     const list = await res.json();
     if (!Array.isArray(list) || list.length === 0) {
-      container.innerHTML = '<div class="text-sm p-4 text-center text-slate-400 font-bold glass-panel border-2 border-dashed border-white/10 rounded-xl">Minden jármű szervize rendben van.</div>'; return;
+      container.innerHTML = '<div class="text-sm p-4 text-center text-slate-400 font-bold glass-panel border-2 border-dashed border-white/10 rounded-xl">Minden jármű szervize rendben van.</div>';
+      initScrollReveal();
+      return;
     }
     container.innerHTML = list.map(r => `
       <div class="glass-panel flex justify-between text-sm p-3 bg-amber-500/10 border-amber-500/20 mb-2">
         <span class="font-black text-amber-400">${r.rendszam}</span>
         <span class="text-amber-200">${r.hatralevo} km maradt</span>
       </div>`).join('');
+    initScrollReveal();
   } catch (e) { container.innerHTML = '<div class="text-sm p-3 text-red-500">Hiba az adatok betöltésekor.</div>'; }
 };
 
@@ -601,13 +636,16 @@ window.loadSoforRangsor = async function () {
     const res = await fetch('http://localhost:3000/api/admin/statisztika/soforok', { headers: { 'Authorization': `Bearer ${window.AppState.token}` } });
     const list = await res.json();
     if (!Array.isArray(list) || list.length === 0) {
-      container.innerHTML = '<div class="text-sm p-4 text-center text-slate-400 font-bold glass-panel border-2 border-dashed border-white/10 rounded-xl">Nincs elegendő adat a rangsorhoz.</div>'; return;
+      container.innerHTML = '<div class="text-sm p-4 text-center text-slate-400 font-bold glass-panel border-2 border-dashed border-white/10 rounded-xl">Nincs elegendő adat a rangsorhoz.</div>';
+      initScrollReveal();
+      return;
     }
     container.innerHTML = list.map((s, i) => `
       <div class="glass-panel flex justify-between items-center p-3 mb-2 hover:bg-white/5 transition">
         <span class="font-bold text-white">${i + 1}. ${s.nev}</span>
         <span class="font-black text-emerald-400 text-lg">${s.atlagFogy} <span class="text-xs font-bold text-emerald-400/70">L/100km</span></span>
       </div>`).join('');
+    initScrollReveal();
   } catch (e) { container.innerHTML = '<div class="text-sm p-3 text-red-500">Hiba a betöltéskor.</div>'; }
 };
 
