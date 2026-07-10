@@ -1,17 +1,13 @@
 const express = require('express');
+const cors = require('cors');
+const routes = require('./routes/index');
+
 const app = express();
-const PORT = 3000;
 
-// Egy egyszerű végpont (endpoint), ami adatot ad vissza a frontendnek
-app.get('/api/adat', (req, res) => {
-    res.json({ 
-        uzenet: "Sziaaaa! Ezt az adatot a Dockerben futó Node.js backend küldte!",
-        idobelyeg: new Date(),
-        uzenet2: "Ez egy teszt uzenet",
-        idobelyeg2: new Date()
-    });
-});
+app.use(cors());
+app.use(express.json());
 
-app.listen(PORT, () => {
-    console.log(`A backend szerver folyamatosan fut a ${PORT}-es porton...`);
-});
+// Útvonalak becsatolása a közös '/api' prefix alá
+app.use('/api', routes);
+
+module.exports = app;
