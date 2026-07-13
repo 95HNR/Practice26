@@ -1,5 +1,7 @@
 const prisma = require('../db');
 const { logAudit } = require('../utils/audit');
+const ExcelJS = require('exceljs'); // Add a fájl elejéhez
+const bcrypt = require('bcrypt'); // (vagy bcryptjs, attól függően mit telepítettél)
 
 exports.getRiasztasok = async (req, res) => {
     try {
@@ -128,6 +130,7 @@ exports.patchUt = async (req, res) => {
 exports.getJelentes = async (req, res) => {
     try {
         const periodus = req.params.periodus;
+        const format = req.query.format || 'csv';
         let whereClause = { status: { in: ['JOVAHAGYOTT', 'TELJESITVE'] } };
 
         if (periodus.includes('_')) {
@@ -137,16 +140,58 @@ exports.getJelentes = async (req, res) => {
             whereClause.honap_ev = { startsWith: periodus };
         }
 
-        const utak = await prisma.ut.findMany({ where: whereClause });
-        let totalKm = 0, totalKoltseg = 0, totalFogyasztas = 0;
-        let csv = 'ID;Datum;Sofor;Rendszam;Indulas;Erkezes;Tavolsag(km);Koltseg(RON);Fogyasztas(L)\n';
+        const utak = await prisma.ut.findMany({ where: whereClause, orderBy: { id: 'asc' } });
 
+        let totalKm = 0, totalKoltseg = 0, totalFogyasztas = 0;
         utak.forEach(u => {
-            totalKm += u.tavolsag || 0; totalKoltseg += u.koltseg || 0; totalFogyasztas += u.fogyasztas || 0;
-            csv += `${u.id};${u.honap_ev};${u.sofor_nev};${u.auto_rendszam};${u.indulas};${u.erkezes};${u.tavolsag};${u.koltseg};${u.fogyasztas}\n`;
+            totalKm += u.tavolsag || 0;
+            totalKoltseg += u.koltseg || 0;
+            totalFogyasztas += u.fogyasztas || 0;
         });
 
+        // --- EXCEL GENERÁLÁS ---
+        if (format === 'xlsx') {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Jelentés');
+
+            worksheet.columns = [
+                { header: 'ID', key: 'id', width: 10 },
+                { header: 'Dátum', key: 'honap_ev', width: 15 },
+                { header: 'Sofőr', key: 'sofor_nev', width: 25 },
+                { header: 'Rendszám', key: 'auto_rendszam', width: 15 },
+                { header: 'Indulás', key: 'indulas', width: 30 },
+                { header: 'Érkezés', key: 'erkezes', width: 30 },
+                { header: 'Távolság (km)', key: 'tavolsag', width: 15 },
+                { header: 'Költség (RON)', key: 'koltseg', width: 15 },
+                { header: 'Fogyasztás (L)', key: 'fogyasztas', width: 15 }
+            ];
+
+            utak.forEach(u => worksheet.addRow(u));
+
+            // Összesen sor hozzáadása
+            const totalRow = worksheet.addRow({
+                erkezes: 'ÖSSZESEN:',
+                tavolsag: totalKm,
+                koltseg: totalKoltseg,
+                fogyasztas: totalFogyasztas
+            });
+            totalRow.font = { bold: true, color: { argb: 'FF000000' } };
+
+            worksheet.getRow(1).font = { bold: true }; // Fejléc vastagon
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="Jelentes_${periodus}.xlsx"`);
+            await workbook.xlsx.write(res);
+            return res.end();
+        }
+
+        // --- EREDETI CSV GENERÁLÁS ---
+        let csv = 'ID;Datum;Sofor;Rendszam;Indulas;Erkezes;Tavolsag(km);Koltseg(RON);Fogyasztas(L)\n';
+        utak.forEach(u => {
+            csv += `${u.id};${u.honap_ev};${u.sofor_nev};${u.auto_rendszam};${u.indulas};${u.erkezes};${u.tavolsag};${u.koltseg};${u.fogyasztas}\n`;
+        });
         csv += `\n;;;;;OSSZESEN:;${totalKm.toFixed(1)};${totalKoltseg.toFixed(2)};${totalFogyasztas.toFixed(1)}\n`;
+
         res.header('Content-Type', 'text/csv');
         res.attachment(`Jelentes_${periodus}.csv`);
         res.send(csv);
@@ -194,4 +239,43 @@ exports.getSoforStatisztika = async (req, res) => {
         })).sort((a, b) => a.atlagFogy - b.atlagFogy);
         res.json(eredmeny);
     } catch (e) { res.status(500).json({ hiba: 'Hiba.' }); }
+};
+
+// --- ÚJ: FELHASZNÁLÓK KEZELÉSE ---
+exports.getUsers = async (req, res) => {
+    try {
+        const users = await prisma.user.findMany({
+            select: { id: true, username: true, role: true }
+        });
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ hiba: 'Hiba a felhasználók lekérésekor.' });
+    }
+};
+
+exports.deleteUser = async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        // Ne engedjük, hogy az admin véletlenül saját magát törölje!
+        if (req.user.id === userId) return res.status(400).json({ hiba: 'Saját magadat nem törölheted!' });
+        
+        await prisma.user.delete({ where: { id: userId } });
+        await logAudit(req.user.username, 'Törlés', `Fiók törölve: ID ${userId}`);
+        res.json({ üzenet: 'Felhasználó törölve!' });
+    } catch (error) { res.status(400).json({ hiba: 'Nem törölhető a felhasználó!' }); }
+};
+
+exports.patchUser = async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id);
+        const { role, password } = req.body;
+        let data = {};
+        
+        if (role) data.role = role;
+        if (password) data.password = await bcrypt.hash(password, 10);
+        
+        await prisma.user.update({ where: { id: userId }, data });
+        await logAudit(req.user.username, 'Módosítás', `Fiók módosítva: ID ${userId}`);
+        res.json({ üzenet: 'Sikeres módosítás!' });
+    } catch (error) { res.status(400).json({ hiba: 'Hiba a módosításkor.' }); }
 };

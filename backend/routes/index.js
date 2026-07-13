@@ -34,8 +34,13 @@ router.get('/autok', authenticateToken, userController.getAutok);
 router.get('/utak', authenticateToken, userController.getUtak);
 router.post('/utak', authenticateToken, userController.addUt);
 router.patch('/utak/:id/lezar', authenticateToken, [
-  body('koltseg').isFloat({ min: 0 }).withMessage('A költség nem lehet negatív!'),
-  body('fogyasztas').isFloat({ min: 0 }).withMessage('A fogyasztás nem lehet negatív!')
+    body('koltseg').isFloat({ min: 0 }).withMessage('A költség nem lehet negatív!'),
+    body('fogyasztas').isFloat({ min: 0 }).withMessage('A fogyasztás nem lehet negatív!')
 ], userController.lezarUt);
+
+// --- JAVÍTOTT: Új felhasználó kezelő végpontok a megfelelő middleware-ekkel ---
+router.get('/admin/users', authenticateToken, requireAdmin, adminController.getUsers);
+router.delete('/admin/users/:id', authenticateToken, requireAdmin, adminController.deleteUser);
+router.patch('/admin/users/:id', authenticateToken, requireAdmin, adminController.patchUser);
 
 module.exports = router;
