@@ -107,7 +107,7 @@ window.closeModal = function (modalId) { document.getElementById(modalId).classL
 window.openModalWithAnim = function (modalId) {
   const modal = document.getElementById(modalId);
   modal.classList.remove('hidden');
-  const card = modal.querySelector('.glass-panel') || modal.querySelector('.theme-card');
+  const card = modal.querySelector('.glass-panel');
   if (card) card.classList.add('fade-in');
 };
 
@@ -185,17 +185,19 @@ window.submitLezarUt = async function (event) {
     showNotification('Fuvar lezárva, kilométeróra frissítve!');
     closeModal('lezarModal');
 
-    // Azonnali DOM frissítés
+    // 1. Azonnali vizuális frissítés (class alapján, hogy a modalban lévő kártya is változzon!)
     const titleText = document.getElementById('lezarModalTitle').innerText;
     const rendszamMatch = titleText.match(/\(([^)]+)\)/);
 
     if (rendszamMatch && rendszamMatch[1]) {
       const rendszam = rendszamMatch[1];
+      // A querySelectorAll az összes előfordulást frissíti a HTML-ben
       document.querySelectorAll(`.km-badge-${rendszam}`).forEach(badge => {
-        badge.innerHTML = `${parseInt(aktualisKm)} <span class="text-slate-500 text-sm ml-1">km</span>`;
+        badge.innerHTML = `🛣️ ${parseInt(aktualisKm)} km`;
       });
     }
 
+    // 2. Szinkronizálás a szerverrel
     if (typeof loadUtak === 'function') loadUtak();
     if (typeof loadAutok === 'function') loadAutok();
 
@@ -235,8 +237,6 @@ window.renderUI = async function () {
     if (document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.remove('hidden');
     if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.remove('hidden');
     if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.remove('hidden');
-    
-    if (document.getElementById('userHistoryBtn')) document.getElementById('userHistoryBtn').classList.add('hidden');
 
     document.getElementById('kliensHeader').classList.add('hidden');
     document.getElementById('soforUrlapContainer').classList.add('hidden');
@@ -255,8 +255,6 @@ window.renderUI = async function () {
     if (document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.add('hidden');
     if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.add('hidden');
     if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.add('hidden');
-    
-    if (document.getElementById('userHistoryBtn')) document.getElementById('userHistoryBtn').classList.remove('hidden');
 
     document.getElementById('kliensHeader').classList.remove('hidden');
     document.getElementById('soforUrlapContainer').classList.remove('hidden');
@@ -363,13 +361,17 @@ window.loadAktivFlotta = async function () {
     const aktivUtak = await API.fetchAktivFlotta(token);
     window.currentAktivFlotta = aktivUtak;
 
-    const modalList = document.getElementById('allFlottaList');
+    const modalList = document.getElementById('allFlottaModal');
     if (modalList && !document.getElementById('allFlottaModal').classList.contains('hidden')) {
       modalList.innerHTML = aktivUtak.map(u => window.generateAktivFlottaHtml(u)).join('');
     }
 
     if (!Array.isArray(aktivUtak) || aktivUtak.length === 0) {
-      container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Nincs egy autó sem.</div>`;
+      // Új, erősebb stílus: szaggatott keret és kontrasztosabb szöveg
+      container.innerHTML = `
+        <div class="h-full flex items-center justify-center border border-dashed border-slate-500/40 rounded-[20px] p-4">
+          <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Nincs autó úton</span>
+        </div>`;
       initScrollReveal();
       return;
     }
@@ -416,6 +418,14 @@ window.openAllRangsorModal = function () {
   openModalWithAnim('allRangsorModal');
 };
 
+window.openAllRangsorModal = function () {
+  const modalList = document.getElementById('allRangsorList');
+  if (modalList) {
+    modalList.innerHTML = window.currentRangsor.map(([rendszam, data]) => window.generateRangsorHtml(rendszam, data)).join('');
+  }
+  openModalWithAnim('allRangsorModal');
+};
+
 window.loadFlottaStatisztika = async function () {
   const container = document.getElementById('flottaRangsor');
   if (!container) return;
@@ -425,6 +435,7 @@ window.loadFlottaStatisztika = async function () {
     const sortedStats = Object.entries(stats).sort((a, b) => b[1].km - a[1].km);
     window.currentRangsor = sortedStats;
 
+    // Ha a modal nyitva van, azt is frissítjük
     const modalList = document.getElementById('allRangsorList');
     if (modalList && !document.getElementById('allRangsorModal').classList.contains('hidden')) {
       modalList.innerHTML = sortedStats.map(([rendszam, data]) => window.generateRangsorHtml(rendszam, data)).join('');
@@ -445,6 +456,7 @@ window.loadFlottaStatisztika = async function () {
         <span class="font-bold text-white">${data.km.toFixed(0)} km</span>
       </div>`).join('');
 
+    // --- ITT AZ ÚJ GOMB ---
     if (sortedStats.length > MAX_ITEMS) {
       const extraCount = sortedStats.length - MAX_ITEMS;
       html += `<button onclick="openAllRangsorModal()" class="w-full py-2 mt-1 shrink-0 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition border border-emerald-500/20">+ További ${extraCount} autó</button>`;
@@ -457,6 +469,8 @@ window.loadFlottaStatisztika = async function () {
 // --- ÉRTESÍTÉSEK LOGIKA ---
 window.generateAlertHtml = function (r) {
   const isWarning = r.includes('⚠️');
+
+  // Eltávolítva a 'mb-2' dupla margó, és vékonyabb 'py-2.5' padding
   return `<div class="glass-panel py-2.5 px-4 reveal active border-l-4 ${isWarning ? 'border-l-amber-500 bg-amber-500/10' : 'border-l-red-500 bg-red-500/10'} flex gap-3 items-start shadow-sm shrink-0">
             <span class="text-lg leading-none mt-0.5">${isWarning ? '⚠️' : '🚨'}</span> 
             <span class="text-[13px] font-black leading-snug text-white">${r.replace('⚠️ ', '').replace('🚨 ', '')}</span>
@@ -478,6 +492,8 @@ window.loadRiasztasok = async function () {
   if (!container) return;
   try {
     let riasztasok = await API.fetchAlerts(token);
+
+    // RENDEZÉS: A kritikus (🚨) értesítések kerülnek a lista elejére
     riasztasok.sort((a, b) => {
       const aCrit = a.includes('🚨');
       const bCrit = b.includes('🚨');
@@ -513,6 +529,7 @@ window.loadRiasztasok = async function () {
 // --- ENGEDÉLYEZÉSEK LOGIKA ---
 window.generateRequestHtml = function (f) {
   const autoTipus = f.auto ? f.auto.tipus : 'Ismeretlen';
+
   return `<div class="req-card p-3.5 rounded-xl transition-all duration-300 flex flex-col justify-between h-full shadow-sm">
             <div>
               <div class="flex justify-between items-center mb-2">
@@ -522,15 +539,23 @@ window.generateRequestHtml = function (f) {
                   <span class="req-sub text-[10px] uppercase font-bold tracking-widest ml-1.5">${autoTipus}</span>
                 </p>
               </div>
+              
               <p class="text-xs leading-relaxed font-bold mb-3.5">
                 <span class="req-title text-sm block mb-1">${f.sofor_nev}</span>
                 <span class="req-sub">${f.indulas.split(',')[0]} ➔ ${f.erkezes.split(',')[0]}</span> 
                 <span class="text-emerald-500 font-black ml-1">(${f.tavolsag} km)</span>
               </p>
             </div>
+            
             <div class="flex gap-2.5 mt-auto">
-               <button onclick="biralUtFizikai(${f.id}, 'JOVAHAGYOTT')" class="flex-1 req-btn-approve font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">✔ JÓVÁHAGY</button>
-               <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" class="flex-1 req-btn-reject font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">✖ ELUTASÍT</button>
+               <button onclick="biralUtFizikai(${f.id}, 'JOVAHAGYOTT')" 
+                       class="flex-1 req-btn-approve font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">
+                 ✔ JÓVÁHAGY
+               </button>
+               <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" 
+                       class="flex-1 req-btn-reject font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">
+                 ✖ ELUTASÍT
+               </button>
             </div>
           </div>`;
 };
@@ -557,18 +582,20 @@ window.loadBeerkezoList = async function () {
     }
 
     if (!Array.isArray(fuvarok) || fuvarok.length === 0) {
+      // Fontos a col-span-full, hogy gridben is középre kerüljön
       container.innerHTML = `<div class="col-span-full text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Jelenleg nincs kérelem.</div>`;
       initScrollReveal();
       return;
     }
 
-    const MAX_ITEMS = 4;
+    const MAX_ITEMS = 4; // <-- LIMIT FELEMELVE 4-RE!
     let html = '';
     const toShow = fuvarok.slice(0, MAX_ITEMS);
     html += toShow.map(f => generateRequestHtml(f)).join('');
 
     if (fuvarok.length > MAX_ITEMS) {
       const extraCount = fuvarok.length - MAX_ITEMS;
+      // Hozzáadtuk a 'col-span-full' osztályt a gombhoz
       html += `<button onclick="openAllRequestsModal()" class="col-span-full w-full py-2 shrink-0 text-[10px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">+ További ${extraCount} kérelem mutatása</button>`;
     }
     container.innerHTML = html;
@@ -619,7 +646,7 @@ window.loadAutok = async function () {
             </span>
           </div>
           
-          <!-- Dátumok sötétített, közös blokkban -->
+          <!-- Dátumok sötétített, közös blokkban (NÖVELT BETŰMÉRETTEL) -->
           <div class="grid grid-cols-3 gap-2 bg-slate-900/50 border border-white/5 p-4 rounded-xl text-center mb-5">
             <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">ITP</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.itp)}</span></div>
             <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">RCA</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.rca)}</span></div>
@@ -640,8 +667,10 @@ window.loadAutok = async function () {
             <button onclick="deleteAutoAction('${a.rendszam}')" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 text-xs px-4 py-3 rounded-xl font-black flex items-center justify-center transition">🗑️</button>
           </div>`;
 
-        // --- 3. KÁRTYÁK ÖSSZEÁLLÍTÁSA ---
+        // --- 3. KÁRTYÁK ÖSSZEÁLLÍTÁSA (Megkerüljük a scroll animációs bugot saját osztályokkal) ---
+        // Lecseréltem a "glass-panel"-t egyedi Tailwind osztályokra, így a ScrollReveal nem rejti el őket véletlenül!
         driverHtml += `<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}</div>`;
+
         adminHtml += `<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}${adminBtns}</div>`;
       });
 
@@ -649,6 +678,7 @@ window.loadAutok = async function () {
       if (adminAutoListContainer) adminAutoListContainer.innerHTML = adminHtml;
     }
 
+    // Csak a formokat és egyéb elemeket animáljuk, a kártyákat békén hagyjuk!
     initScrollReveal();
 
     const rendszamSelect = document.getElementById('utRendszam');
@@ -663,8 +693,8 @@ window.loadAutok = async function () {
         if (elerhetoAutok.some(a => a.rendszam === jelenlegiKivalasztott)) rendszamSelect.value = jelenlegiKivalasztott;
       }
     }
-  } catch (e) { 
-    console.error("Hiba a kártyák betöltésekor:", e); 
+  } catch (e) {
+    console.error("Hiba a kártyák betöltésekor:", e);
   }
 };
 
@@ -753,6 +783,7 @@ window.deleteUserAction = async function (id, username) {
 
 window.loadUtak = async function () {
   const token = window.AppState.token; const currentUser = window.AppState.user; if (!token || !currentUser) return;
+
   const szuro = document.getElementById('adminKerelmekSzuro')?.value || '';
 
   try {
@@ -944,6 +975,7 @@ window.loadAuditLog = async function () {
   } catch (e) { console.error(e); }
 };
 
+// --- TELJES FLOTTA SZERVIZTÖRTÉNET ---
 window.loadAllSzervizHistory = async function () {
   const token = window.AppState.token;
   if (!token || window.AppState.user.role !== 'ADMIN') return;
@@ -952,6 +984,7 @@ window.loadAllSzervizHistory = async function () {
   if (!container) return;
 
   try {
+    // Feltételezzük, hogy létezik egy globális szerviz lekérő végpont
     const res = await fetch('http://localhost:3000/api/admin/szerviz', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
