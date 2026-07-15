@@ -107,7 +107,7 @@ window.closeModal = function (modalId) { document.getElementById(modalId).classL
 window.openModalWithAnim = function (modalId) {
   const modal = document.getElementById(modalId);
   modal.classList.remove('hidden');
-  const card = modal.querySelector('.glass-panel');
+  const card = modal.querySelector('.glass-panel') || modal.querySelector('.theme-card');
   if (card) card.classList.add('fade-in');
 };
 
@@ -155,6 +155,55 @@ window.openLezarModal = function (id, rendszam) {
 };
 window.closeLezarModal = function () { closeModal('lezarModal'); };
 
+window.submitLezarUt = async function (event) {
+  event.preventDefault();
+  const id = document.getElementById('lezarUtId').value;
+  const koltseg = document.getElementById('lezarKoltseg').value;
+  const fogyasztas = document.getElementById('lezarFogyasztas').value;
+  const aktualisKm = document.getElementById('lezarKm').value;
+
+  try {
+    const res = await fetch(`http://localhost:3000/api/utak/${id}/lezar`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${window.AppState.token}`
+      },
+      body: JSON.stringify({
+        koltseg: parseFloat(koltseg),
+        fogyasztas: parseFloat(fogyasztas),
+        aktualis_km: parseInt(aktualisKm)
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.hiba || 'Hiba a lezárás során!');
+      return;
+    }
+
+    showNotification('Fuvar lezárva, kilométeróra frissítve!');
+    closeModal('lezarModal');
+
+    // Azonnali DOM frissítés
+    const titleText = document.getElementById('lezarModalTitle').innerText;
+    const rendszamMatch = titleText.match(/\(([^)]+)\)/);
+
+    if (rendszamMatch && rendszamMatch[1]) {
+      const rendszam = rendszamMatch[1];
+      document.querySelectorAll(`.km-badge-${rendszam}`).forEach(badge => {
+        badge.innerHTML = `${parseInt(aktualisKm)} <span class="text-slate-500 text-sm ml-1">km</span>`;
+      });
+    }
+
+    if (typeof loadUtak === 'function') loadUtak();
+    if (typeof loadAutok === 'function') loadAutok();
+
+  } catch (e) {
+    alert('Hálózati hiba történt a lezárás során.');
+  }
+};
+
 window.renderUI = async function () {
   const token = window.AppState?.token;
   const currentUser = window.AppState?.user;
@@ -186,6 +235,8 @@ window.renderUI = async function () {
     if (document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.remove('hidden');
     if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.remove('hidden');
     if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.remove('hidden');
+    
+    if (document.getElementById('userHistoryBtn')) document.getElementById('userHistoryBtn').classList.add('hidden');
 
     document.getElementById('kliensHeader').classList.add('hidden');
     document.getElementById('soforUrlapContainer').classList.add('hidden');
@@ -204,6 +255,8 @@ window.renderUI = async function () {
     if (document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.add('hidden');
     if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.add('hidden');
     if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.add('hidden');
+    
+    if (document.getElementById('userHistoryBtn')) document.getElementById('userHistoryBtn').classList.remove('hidden');
 
     document.getElementById('kliensHeader').classList.remove('hidden');
     document.getElementById('soforUrlapContainer').classList.remove('hidden');
@@ -316,7 +369,7 @@ window.loadAktivFlotta = async function () {
     }
 
     if (!Array.isArray(aktivUtak) || aktivUtak.length === 0) {
-      container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">A flotta pihen.</div>`;
+      container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Nincs egy autó sem.</div>`;
       initScrollReveal();
       return;
     }
@@ -379,11 +432,10 @@ window.loadFlottaStatisztika = async function () {
 
     if (sortedStats.length === 0) {
       container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Még nincs adat.</div>`;
-      initScrollReveal();
       return;
     }
 
-    const MAX_ITEMS = 3; // <-- LIMIT FELEMELVE 3-RA!
+    const MAX_ITEMS = 3;
     let html = '';
     const toShow = sortedStats.slice(0, MAX_ITEMS);
 
@@ -397,16 +449,14 @@ window.loadFlottaStatisztika = async function () {
       const extraCount = sortedStats.length - MAX_ITEMS;
       html += `<button onclick="openAllRangsorModal()" class="w-full py-2 mt-1 shrink-0 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition border border-emerald-500/20">+ További ${extraCount} autó</button>`;
     }
+
     container.innerHTML = html;
-    initScrollReveal();
   } catch (e) { console.error(e); }
 };
 
 // --- ÉRTESÍTÉSEK LOGIKA ---
 window.generateAlertHtml = function (r) {
   const isWarning = r.includes('⚠️');
-
-  // Eltávolítva a 'mb-2' dupla margó, és vékonyabb 'py-2.5' padding
   return `<div class="glass-panel py-2.5 px-4 reveal active border-l-4 ${isWarning ? 'border-l-amber-500 bg-amber-500/10' : 'border-l-red-500 bg-red-500/10'} flex gap-3 items-start shadow-sm shrink-0">
             <span class="text-lg leading-none mt-0.5">${isWarning ? '⚠️' : '🚨'}</span> 
             <span class="text-[13px] font-black leading-snug text-white">${r.replace('⚠️ ', '').replace('🚨 ', '')}</span>
@@ -428,8 +478,6 @@ window.loadRiasztasok = async function () {
   if (!container) return;
   try {
     let riasztasok = await API.fetchAlerts(token);
-
-    // RENDEZÉS: A kritikus (🚨) értesítések kerülnek a lista elejére
     riasztasok.sort((a, b) => {
       const aCrit = a.includes('🚨');
       const bCrit = b.includes('🚨');
@@ -465,7 +513,6 @@ window.loadRiasztasok = async function () {
 // --- ENGEDÉLYEZÉSEK LOGIKA ---
 window.generateRequestHtml = function (f) {
   const autoTipus = f.auto ? f.auto.tipus : 'Ismeretlen';
-
   return `<div class="req-card p-3.5 rounded-xl transition-all duration-300 flex flex-col justify-between h-full shadow-sm">
             <div>
               <div class="flex justify-between items-center mb-2">
@@ -475,23 +522,15 @@ window.generateRequestHtml = function (f) {
                   <span class="req-sub text-[10px] uppercase font-bold tracking-widest ml-1.5">${autoTipus}</span>
                 </p>
               </div>
-              
               <p class="text-xs leading-relaxed font-bold mb-3.5">
                 <span class="req-title text-sm block mb-1">${f.sofor_nev}</span>
                 <span class="req-sub">${f.indulas.split(',')[0]} ➔ ${f.erkezes.split(',')[0]}</span> 
                 <span class="text-emerald-500 font-black ml-1">(${f.tavolsag} km)</span>
               </p>
             </div>
-            
             <div class="flex gap-2.5 mt-auto">
-               <button onclick="biralUtFizikai(${f.id}, 'JOVAHAGYOTT')" 
-                       class="flex-1 req-btn-approve font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">
-                 ✔ JÓVÁHAGY
-               </button>
-               <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" 
-                       class="flex-1 req-btn-reject font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">
-                 ✖ ELVET
-               </button>
+               <button onclick="biralUtFizikai(${f.id}, 'JOVAHAGYOTT')" class="flex-1 req-btn-approve font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">✔ JÓVÁHAGY</button>
+               <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" class="flex-1 req-btn-reject font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">✖ ELUTASÍT</button>
             </div>
           </div>`;
 };
@@ -518,20 +557,18 @@ window.loadBeerkezoList = async function () {
     }
 
     if (!Array.isArray(fuvarok) || fuvarok.length === 0) {
-      // Fontos a col-span-full, hogy gridben is középre kerüljön
       container.innerHTML = `<div class="col-span-full text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Jelenleg nincs kérelem.</div>`;
       initScrollReveal();
       return;
     }
 
-    const MAX_ITEMS = 4; // <-- LIMIT FELEMELVE 4-RE!
+    const MAX_ITEMS = 4;
     let html = '';
     const toShow = fuvarok.slice(0, MAX_ITEMS);
     html += toShow.map(f => generateRequestHtml(f)).join('');
 
     if (fuvarok.length > MAX_ITEMS) {
       const extraCount = fuvarok.length - MAX_ITEMS;
-      // Hozzáadtuk a 'col-span-full' osztályt a gombhoz
       html += `<button onclick="openAllRequestsModal()" class="col-span-full w-full py-2 shrink-0 text-[10px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">+ További ${extraCount} kérelem mutatása</button>`;
     }
     container.innerHTML = html;
@@ -557,7 +594,7 @@ window.loadAutok = async function () {
 
     if (autok.length === 0) {
       const emptyHtml = `
-        <div class="col-span-full py-12 flex flex-col items-center justify-center glass-panel border-2 border-dashed border-white/10 rounded-3xl">
+        <div class="col-span-full py-12 flex flex-col items-center justify-center bg-white/5 backdrop-blur-md border-2 border-dashed border-white/10 rounded-3xl">
           <div class="text-5xl mb-4 opacity-40">🚘</div>
           <p class="font-black text-white text-lg tracking-tight">A járműpark üres</p>
           <p class="text-slate-400 text-sm mt-2 font-medium">Nincs regisztrált autó a rendszerben.</p>
@@ -568,33 +605,44 @@ window.loadAutok = async function () {
       let driverHtml = '';
       let adminHtml = '';
 
-      autok.forEach((a) => {
+      autok.forEach((a, index) => {
+        // --- 1. KÖZÖS FEJLÉC (ÚJ, KÉP ALAPJÁN KÉSZÜLT DIZÁJN - NAGYOBB DÁTUMOKKAL) ---
         const commonHeader = `
-          <div class="flex justify-between items-start mb-6">
-            <div>
+          <div class="flex justify-between items-center mb-5">
+            <div class="flex items-center gap-3">
               <div class="font-black text-white text-2xl tracking-widest font-mono drop-shadow-sm select-all">${a.rendszam}</div>
-              <div class="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">${a.tipus}</div>
+              <div class="text-[10px] text-blue-300 bg-blue-500/20 border border-blue-500/30 px-2 py-1 rounded font-black uppercase tracking-widest">${a.tipus}</div>
             </div>
             <span class="flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-full font-black tracking-widest ${a.statusz === 'ELERHETO' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}">
               <div class="w-1.5 h-1.5 rounded-full ${a.statusz === 'ELERHETO' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}"></div>
-              ${a.statusz === 'ELERHETO' ? 'ELÉRHETŐ' : 'FOGLALT'}
+              ${a.statusz === 'ELERHETO' ? 'ELÉRHETŐ' : 'NEM ELÉRHETŐ'}
             </span>
           </div>
-          <div class="grid grid-cols-3 gap-2 theme-input p-4 rounded-2xl text-center mb-6">
-            <div class="flex flex-col"><span class="block text-slate-400 text-[9px] font-black mb-1.5 uppercase tracking-wider">ITP</span> <span class="font-mono text-white text-xs font-bold">${formatDateStr(a.itp)}</span></div>
-            <div class="flex flex-col"><span class="block text-slate-400 text-[9px] font-black mb-1.5 uppercase tracking-wider">RCA</span> <span class="font-mono text-white text-xs font-bold">${formatDateStr(a.rca)}</span></div>
-            <div class="flex flex-col"><span class="block text-slate-400 text-[9px] font-black mb-1.5 uppercase tracking-wider">Utadó</span> <span class="font-mono text-white text-xs font-bold">${formatDateStr(a.rovinieta)}</span></div>
+          
+          <!-- Dátumok sötétített, közös blokkban -->
+          <div class="grid grid-cols-3 gap-2 bg-slate-900/50 border border-white/5 p-4 rounded-xl text-center mb-5">
+            <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">ITP</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.itp)}</span></div>
+            <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">RCA</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.rca)}</span></div>
+            <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">Utadó</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.rovinieta)}</span></div>
+          </div>
+          
+          <!-- Széles kilométer jelvény alul -->
+          <div class="mt-auto w-full bg-slate-900/60 border border-white/5 rounded-full py-3 px-4 flex justify-center items-center gap-3 shadow-inner">
+            <span class="text-xl drop-shadow-md">🚗</span>
+            <span class="km-badge-${a.rendszam} font-mono font-black text-slate-200 text-xl tracking-widest drop-shadow-sm">${a.aktualis_km || 0} <span class="text-slate-500 text-sm ml-1">km</span></span>
           </div>`;
 
+        // --- 2. ADMIN GOMBOK ---
         const adminBtns = `
-          <div class="flex gap-2 pt-4 border-t border-white/10">
-            <button onclick="openSzervizModal('${a.rendszam}')" class="glass-btn flex-1 text-white text-xs py-3 rounded-xl font-black flex items-center justify-center gap-1">🛠️ Szerviz</button>
-            <button onclick="openEditModal('${a.rendszam}')" class="glass-btn flex-1 text-white text-xs py-3 rounded-xl font-black flex items-center justify-center gap-1">✏️ Módosít</button>
-            <button onclick="deleteAutoAction('${a.rendszam}')" class="glass-btn bg-red-500/20 hover:bg-red-500/40 text-red-400 text-xs px-4 py-3 rounded-xl font-black flex items-center justify-center">🗑️</button>
+          <div class="flex gap-2 pt-4 border-t border-white/10 mt-4">
+            <button onclick="openSzervizModal('${a.rendszam}')" class="bg-white/5 hover:bg-white/10 border border-white/10 flex-1 text-white text-xs py-3 rounded-xl font-black flex items-center justify-center gap-1 transition">🛠️ Szerviz</button>
+            <button onclick="openEditModal('${a.rendszam}')" class="bg-white/5 hover:bg-white/10 border border-white/10 flex-1 text-white text-xs py-3 rounded-xl font-black flex items-center justify-center gap-1 transition">✏️ Módosít</button>
+            <button onclick="deleteAutoAction('${a.rendszam}')" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 text-xs px-4 py-3 rounded-xl font-black flex items-center justify-center transition">🗑️</button>
           </div>`;
 
-        driverHtml += `<div class="glass-panel group p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/5">${commonHeader}</div>`;
-        adminHtml += `<div class="glass-panel group p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/5">${commonHeader}${adminBtns}</div>`;
+        // --- 3. KÁRTYÁK ÖSSZEÁLLÍTÁSA ---
+        driverHtml += `<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}</div>`;
+        adminHtml += `<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}${adminBtns}</div>`;
       });
 
       if (autoListContainer) autoListContainer.innerHTML = driverHtml;
@@ -615,7 +663,9 @@ window.loadAutok = async function () {
         if (elerhetoAutok.some(a => a.rendszam === jelenlegiKivalasztott)) rendszamSelect.value = jelenlegiKivalasztott;
       }
     }
-  } catch (e) { }
+  } catch (e) { 
+    console.error("Hiba a kártyák betöltésekor:", e); 
+  }
 };
 
 window.loadSzemelyzet = async function () {
@@ -703,7 +753,6 @@ window.deleteUserAction = async function (id, username) {
 
 window.loadUtak = async function () {
   const token = window.AppState.token; const currentUser = window.AppState.user; if (!token || !currentUser) return;
-
   const szuro = document.getElementById('adminKerelmekSzuro')?.value || '';
 
   try {
@@ -893,6 +942,40 @@ window.loadAuditLog = async function () {
         <td class="py-5 px-6 text-white text-sm font-medium">${l.reszletek}</td>
       </tr>`).join('');
   } catch (e) { console.error(e); }
+};
+
+window.loadAllSzervizHistory = async function () {
+  const token = window.AppState.token;
+  if (!token || window.AppState.user.role !== 'ADMIN') return;
+
+  const container = document.getElementById('allSzervizHistoryList');
+  if (!container) return;
+
+  try {
+    const res = await fetch('http://localhost:3000/api/admin/szerviz', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!res.ok) throw new Error('Hiba a lekéréskor');
+    const szervizek = await res.json();
+
+    if (!Array.isArray(szervizek) || szervizek.length === 0) {
+      container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-slate-400 font-bold">Nincsenek rögzített szervizbejegyzések a rendszerben.</td></tr>';
+      return;
+    }
+
+    container.innerHTML = szervizek.map((sz, index) => `
+      <tr class="transition-all duration-300 fade-in border-b border-white/5 hover:bg-white/5" style="animation-delay: ${index * 30}ms">
+        <td class="py-5 px-5 text-[11px] text-slate-400 font-mono font-black">${sz.datum ? sz.datum.split('T')[0] : '-'}</td>
+        <td class="py-5 px-5 font-black text-blue-400 font-mono tracking-widest">${sz.auto_rendszam || sz.rendszam || 'Ismeretlen'}</td>
+        <td class="py-5 px-5 font-bold text-white">${sz.kilometer} km</td>
+        <td class="py-5 px-5 text-white text-sm font-medium">${sz.leiras}</td>
+      </tr>`).join('');
+
+  } catch (e) {
+    console.error(e);
+    container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-red-400 font-bold">Hiba történt. Készíteni kell egy globális GET /api/admin/szerviz végpontot a backendben!</td></tr>';
+  }
 };
 
 window.toggleDateInputs = function () { document.getElementById('dateEnd').classList.toggle('hidden', document.getElementById('periodusTipus').value !== 'intervallum'); };

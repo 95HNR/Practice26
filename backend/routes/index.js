@@ -28,14 +28,18 @@ router.get('/admin/audit', authenticateToken, requireAdmin, adminController.getA
 router.get('/admin/statisztika/flotta', authenticateToken, requireAdmin, adminController.getFlottaStatisztika);
 router.get('/admin/szerviz-figyelmeztetesek', authenticateToken, requireAdmin, adminController.getSzervizFigyelmeztetesek);
 router.get('/admin/statisztika/soforok', authenticateToken, requireAdmin, adminController.getSoforStatisztika);
+router.get('/admin/szerviz', authenticateToken, requireAdmin, adminController.getAllSzervizHistory);
 
 // USER
 router.get('/autok', authenticateToken, userController.getAutok);
 router.get('/utak', authenticateToken, userController.getUtak);
 router.post('/utak', authenticateToken, userController.addUt);
+
+// --- KIEGÉSZÍTVE: aktualis_km validációval ---
 router.patch('/utak/:id/lezar', authenticateToken, [
     body('koltseg').isFloat({ min: 0 }).withMessage('A költség nem lehet negatív!'),
-    body('fogyasztas').isFloat({ min: 0 }).withMessage('A fogyasztás nem lehet negatív!')
+    body('fogyasztas').isFloat({ min: 0 }).withMessage('A fogyasztás nem lehet negatív!'),
+    body('aktualis_km').isInt({ min: 0 }).withMessage('A kilométeróra nem lehet negatív!')
 ], userController.lezarUt);
 
 // --- JAVÍTOTT: Új felhasználó kezelő végpontok a megfelelő middleware-ekkel ---

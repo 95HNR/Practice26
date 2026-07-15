@@ -100,6 +100,18 @@ exports.getSzerviz = async (req, res) => {
     catch (error) { res.status(500).json({ hiba: 'Hiba.' }); }
 };
 
+// --- ÚJ: Teljes flotta szerviztörténetének lekérése ---
+exports.getAllSzervizHistory = async (req, res) => {
+    try {
+        const szervizek = await prisma.szerviz.findMany({
+            orderBy: { datum: 'desc' }
+        });
+        res.json(szervizek);
+    } catch (error) {
+        res.status(500).json({ hiba: 'Hiba a teljes szerviztörténet lekérésekor.' });
+    }
+};
+
 exports.addSzerviz = async (req, res) => {
     try {
         const { auto_rendszam, datum, leiras, kilometer } = req.body;
@@ -258,7 +270,7 @@ exports.deleteUser = async (req, res) => {
         const userId = parseInt(req.params.id);
         // Ne engedjük, hogy az admin véletlenül saját magát törölje!
         if (req.user.id === userId) return res.status(400).json({ hiba: 'Saját magadat nem törölheted!' });
-        
+
         await prisma.user.delete({ where: { id: userId } });
         await logAudit(req.user.username, 'Törlés', `Fiók törölve: ID ${userId}`);
         res.json({ üzenet: 'Felhasználó törölve!' });
@@ -270,10 +282,10 @@ exports.patchUser = async (req, res) => {
         const userId = parseInt(req.params.id);
         const { role, password } = req.body;
         let data = {};
-        
+
         if (role) data.role = role;
         if (password) data.password = await bcrypt.hash(password, 10);
-        
+
         await prisma.user.update({ where: { id: userId }, data });
         await logAudit(req.user.username, 'Módosítás', `Fiók módosítva: ID ${userId}`);
         res.json({ üzenet: 'Sikeres módosítás!' });

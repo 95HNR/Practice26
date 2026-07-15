@@ -226,13 +226,8 @@
       color: #1e293b !important;
     }
 
-    /* =========================================
-       LIQUID GLASS ENGEDÉLYEZÉSEK KÁRTYA
-       ========================================= */
     .req-card {
-      /* Fél átlátszó sötét háttér */
       background: rgba(30, 41, 59, 0.45) !important;
-      /* Liquid glass homályosítás */
       backdrop-filter: blur(16px) saturate(120%);
       -webkit-backdrop-filter: blur(16px) saturate(120%);
       border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -240,16 +235,13 @@
     }
 
     .light-theme .req-card {
-      /* Fél átlátszó világos háttér */
       background: rgba(255, 255, 255, 0.5) !important;
       backdrop-filter: blur(16px) saturate(120%);
       -webkit-backdrop-filter: blur(16px) saturate(120%);
-      /* Fehéres csillogó keret az üveg hatáshoz */
       border: 1px solid rgba(255, 255, 255, 0.8) !important;
       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05) !important;
     }
 
-    /* Szövegek - garantált kontraszt */
     .req-title {
       color: #f8fafc !important;
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -268,7 +260,6 @@
       color: #475569 !important;
     }
 
-    /* GOMBOK - Erőszakkal kikényszerített színek és hófehér betűk */
     .req-btn-approve {
       background: rgba(16, 185, 129, 0.9) !important;
       color: #ffffff !important;
@@ -291,17 +282,12 @@
       transform: translateY(-1px);
     }
 
-    /* =========================================
-       LENYÍLÓ ABLAKOK (DROPDOWN) STÍLUSAI
-       ========================================= */
     .dropdown-bg {
       background-color: #0f172a !important;
-      /* Tömör sötét háttér */
     }
 
     .light-theme .dropdown-bg {
       background-color: #ffffff !important;
-      /* Tömör fehér háttér */
     }
 
     .dropdown-item {
@@ -318,6 +304,37 @@
 
     .light-theme .dropdown-item:hover {
       background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    /* =========================================
+       VILÁGOS MÓD JAVÍTÁSOK (Kártya olvashatóság)
+       ========================================= */
+    .light-theme .text-slate-200 {
+      color: #1e293b !important;
+    }
+
+    .light-theme .text-slate-500 {
+      color: #64748b !important;
+    }
+
+    .light-theme .text-blue-300 {
+      color: #2563eb !important;
+    }
+
+    .light-theme .text-emerald-400 {
+      color: #059669 !important;
+    }
+
+    .light-theme .bg-emerald-400 {
+      background-color: #059669 !important;
+    }
+
+    .light-theme .text-red-400 {
+      color: #dc2626 !important;
+    }
+
+    .light-theme .bg-red-400 {
+      background-color: #dc2626 !important;
     }
   </style>
 
@@ -340,6 +357,12 @@
       <button onclick="toggleTheme()"
         class="bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/30 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
         🌓 <span class="hidden sm:inline">Téma</span>
+      </button>
+
+      <!-- Saját Előzményeim Gomb (Csak User módnál látszik majd) -->
+      <button id="userHistoryBtn" onclick="openModalWithAnim('historyModal')"
+        class="hidden bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition">
+        📋 <span class="hidden sm:inline">Saját Előzményeim</span>
       </button>
 
       <div id="adminAddMenu" class="hidden relative">
@@ -380,13 +403,16 @@
           📜 <span class="hidden sm:inline">Előzmények</span>
         </button>
         <div id="historyDropdownContent"
-          class="absolute right-0 mt-2 w-56 theme-card border theme-border rounded-2xl p-2 hidden z-50 shadow-2xl bg-slate-900/95 backdrop-blur-md">
+          class="absolute right-0 mt-2 w-56 dropdown-bg border theme-border rounded-2xl p-2 hidden z-50 shadow-2xl">
           <button onclick="openModalWithAnim('auditModal'); closeAllDropdowns()"
-            class="w-full text-left px-4 py-3 hover:bg-white/10 rounded-xl text-sm font-bold transition text-white">📝
-            Audit Napló</button>
+            class="w-full text-left px-4 py-3 dropdown-item rounded-xl text-sm font-bold transition text-white">📝 Audit
+            Napló</button>
           <button onclick="openModalWithAnim('historyModal'); closeAllDropdowns()"
-            class="w-full text-left px-4 py-3 hover:bg-white/10 rounded-xl text-sm font-bold transition text-white">📋
-            Fuvar Előzmények</button>
+            class="w-full text-left px-4 py-3 dropdown-item rounded-xl text-sm font-bold transition text-white">📋 Fuvar
+            Előzmények</button>
+          <button onclick="openModalWithAnim('allSzervizHistoryModal'); loadAllSzervizHistory(); closeAllDropdowns()"
+            class="w-full text-left px-4 py-3 dropdown-item rounded-xl text-sm font-bold transition text-white">🛠️
+            Szerviztörténet</button>
         </div>
       </div>
 
@@ -427,10 +453,7 @@
       class="hidden mt-4 w-full h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden custom-scrollbar pb-10">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full h-full pb-4">
 
-        <!-- BAL OLDAL (Mostantól fix, nem görgethető!) -->
         <div class="lg:col-span-3 xl:col-span-2 flex flex-col gap-5 h-full">
-
-          <!-- Vezérlőpult (Fix méret) -->
           <div
             class="bg-blue-500/10 border border-blue-500/20 p-5 rounded-3xl shadow-sm flex flex-col w-full relative shrink-0">
             <h3 class="font-black text-blue-500 text-sm flex items-center gap-2 mb-4"><span>🛡️</span> Vezérlőpult</h3>
@@ -455,47 +478,35 @@
             </div>
           </div>
 
-          <!-- Élő Flottakövetés (Max 2 elem) -->
           <div class="theme-card p-5 rounded-3xl shrink-0 flex flex-col">
             <h4 class="font-bold mb-4 text-sm flex items-center gap-2 theme-text"><span>📡</span> Élő Flottakövetés</h4>
             <div id="aktivFlottaList" class="flex flex-col gap-2"></div>
           </div>
 
-          <!-- Flotta Rangsor (Max 2 elem) -->
           <div class="theme-card p-5 rounded-3xl shrink-0 flex flex-col">
             <h4 class="font-bold mb-4 text-sm flex items-center gap-2 theme-text"><span>🏆</span> Flotta Rangsor</h4>
             <div id="flottaRangsor" class="flex flex-col gap-2"></div>
           </div>
-
         </div>
 
-        <!-- KÖZÉPSŐ OSZLOP: Szorosan a tartalomhoz igazodva -->
         <div class="lg:col-span-4 xl:col-span-5 flex flex-col gap-3 w-full">
-
-          <!-- Értesítések -->
           <div class="theme-card p-4 rounded-3xl flex flex-col w-full h-fit relative">
             <h4 class="font-bold mb-2 text-sm flex items-center gap-2 text-amber-500 shrink-0"><span>⚠️</span>
               Értesítések</h4>
-            <!-- Nincs scrollbar! -->
             <div id="alertContainer" class="flex flex-col gap-2"></div>
           </div>
 
-          <!-- Engedélyezések -->
           <div class="theme-card p-4 rounded-3xl flex flex-col w-full h-fit relative">
-            <h4 class="font-bold mb-2 text-sm flex items-center gap-2 text-blue-400 shrink-0"><span>📩</span>
-              Engedélyezések</h4>
-            <!-- CSS Grid 2 oszloppal! -->
+            <h4 class="font-bold mb-2 text-sm flex items-center gap-2 text-blue-400 shrink-0"><span>📩</span> Beérkező
+              kérelmek</h4>
             <div id="beerkezoList" class="grid grid-cols-1 xl:grid-cols-2 gap-3"></div>
           </div>
-
         </div>
 
-        <!-- JOBB OLDALI OSZLOP: Grafikon (Pontosan kitölti a 100% magasságot nyújtás nélkül) -->
         <div class="lg:col-span-5 xl:col-span-5 h-full">
           <div class="theme-card p-6 sm:p-8 rounded-3xl w-full flex flex-col h-full">
-            <h4 class="font-bold mb-4 text-xl theme-text flex items-center gap-3 shrink-0"><span>📈</span>
-              Üzemanyagköltség Trend (RON)</h4>
-            <!-- A min-h-0 és a flex-1 biztosítja, hogy a canvas organikusan kitöltse a fennmaradó helyet -->
+            <h4 class="font-bold mb-4 text-xl theme-text flex items-center gap-3 shrink-0"><span>📈</span> E havi
+              üzemanyagköltség (RON)</h4>
             <div class="flex-1 w-full relative min-h-0">
               <canvas id="costChart" class="absolute inset-0"></canvas>
             </div>
@@ -506,56 +517,86 @@
     </div>
     <!-- ================= ADMIN FŐOLDAL VÉGE ================= -->
 
-    <!-- SOFŐR FŐOLDAL -->
-    <div id="kliensSection" class="hidden space-y-8 mt-4 w-full pb-8">
-      <div id="kliensHeader"
-        class="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-3xl shadow-sm flex justify-between items-center w-full">
-        <h3 class="font-black text-emerald-500 text-xl flex items-center gap-3"><span>🧑‍✈️</span> Sofőr Igénylő Központ
-        </h3>
-        <button onclick="openModalWithAnim('historyModal')"
-          class="bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/40 px-4 py-2 rounded-xl text-sm font-bold transition">📋
-          Saját Előzményeim</button>
-      </div>
+    <!-- ================= SOFŐR FŐOLDAL ================= -->
+    <div id="kliensSection"
+      class="hidden mt-4 w-full h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden custom-scrollbar pb-10">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full h-full pb-4">
 
-      <div id="soforUrlapContainer"
-        class="theme-card p-6 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden w-full">
-        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>✍️</span> Új Fuvarigény Leadása</h4>
-        <form onsubmit="addUt(event)" class="grid grid-cols-1 md:grid-cols-5 gap-5">
-          <select id="utRendszam" required class="theme-input rounded-xl p-4 w-full font-bold">
-            <option value="">Betöltés...</option>
-          </select>
-          <input type="date" id="utDatum" required onchange="loadAutok()"
-            class="theme-input rounded-xl p-4 w-full font-mono">
-          <div class="relative">
-            <input type="text" id="utIndulas" placeholder="Indulás Helyszíne" required autocomplete="off"
-              oninput="searchOSM(this, 'indulasList')" class="theme-input rounded-xl p-4 w-full font-medium">
-            <div id="indulasList"
-              class="absolute z-50 left-0 right-0 top-full mt-2 dropdown-bg rounded-2xl shadow-2xl hidden max-h-60 overflow-y-auto border theme-border custom-scrollbar">
-            </div>
-          </div>
-          <div class="relative">
-            <input type="text" id="utErkezes" placeholder="Érkezés Célpontja" required autocomplete="off"
-              oninput="searchOSM(this, 'erkezesList')" class="theme-input rounded-xl p-4 w-full font-medium">
-            <div id="erkezesList"
-              class="absolute z-50 left-0 right-0 top-full mt-2 dropdown-bg rounded-2xl shadow-2xl hidden max-h-60 overflow-y-auto border theme-border custom-scrollbar">
-            </div>
-          </div>
-          <input type="text" id="utTav" placeholder="Távolság" readonly
-            class="theme-input rounded-xl p-4 w-full text-emerald-500 font-black text-center text-lg">
-          <button type="submit"
-            class="md:col-span-5 bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 transition text-lg mt-2">Igény
-            Beküldése Engedélyezésre</button>
-        </form>
-      </div>
+        <!-- BAL OLDAL (Űrlap Sidebar - Megnövelt magasság és nagyobb elemek) -->
+        <div class="lg:col-span-4 xl:col-span-3 flex flex-col">
+          <div id="soforUrlapContainer"
+            class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-8 w-full flex flex-col h-full">
+            <h4 class="font-black mb-8 text-xl flex items-center gap-3 text-white"><span>✍️</span> Új Fuvarigény</h4>
 
-      <div id="kliensListaContainer" class="space-y-8 w-full">
-        <div class="theme-card p-6 sm:p-8 rounded-3xl w-full">
-          <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>🚘</span> Flotta Jelenlegi
-            Állapota</h4>
-          <div id="autoList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+            <form onsubmit="addUt(event)" class="flex flex-col gap-6">
+
+              <!-- 1. Autóválasztó (Nagyobb padding, nagyobb betű) -->
+              <div class="relative z-50">
+                <select id="utRendszam" required
+                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-bold text-base outline-none focus:border-emerald-500/50 transition appearance-none cursor-pointer">
+                  <option value="">-- Válassz a szabad autók közül --</option>
+                </select>
+              </div>
+
+              <!-- 2. Dátum -->
+              <div class="relative z-40">
+                <input type="date" id="utDatum" required onchange="loadAutok()"
+                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-mono text-base outline-none focus:border-emerald-500/50 transition [color-scheme:dark] cursor-pointer">
+              </div>
+
+              <!-- 3. Indulás -->
+              <div class="relative z-30">
+                <input type="text" id="utIndulas" placeholder="Indulási hely" required autocomplete="off"
+                  oninput="searchOSM(this, 'indulasList')"
+                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-base outline-none focus:border-emerald-500/50 transition">
+                <div id="indulasList"
+                  class="absolute left-0 right-0 top-full mt-2 dropdown-bg rounded-[20px] shadow-2xl hidden max-h-48 overflow-y-auto border theme-border custom-scrollbar">
+                </div>
+              </div>
+
+              <!-- 4. Érkezés -->
+              <div class="relative z-20">
+                <input type="text" id="utErkezes" placeholder="Érkezési hely" required autocomplete="off"
+                  oninput="searchOSM(this, 'erkezesList')"
+                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-base outline-none focus:border-emerald-500/50 transition">
+                <div id="erkezesList"
+                  class="absolute left-0 right-0 top-full mt-2 dropdown-bg rounded-[20px] shadow-2xl hidden max-h-48 overflow-y-auto border theme-border custom-scrollbar">
+                </div>
+              </div>
+
+              <!-- 5. Távolság (Nagyobb doboz) -->
+              <div
+                class="relative z-10 flex flex-col items-center justify-center py-4 bg-slate-900/40 border border-white/5 rounded-full mt-2">
+                <span class="text-slate-400 text-[11px] font-black tracking-widest uppercase">Távolság</span>
+                <input type="text" id="utTav" placeholder="-" readonly
+                  class="bg-transparent border-none outline-none text-white font-black text-center text-xl w-full mt-1">
+              </div>
+
+              <!-- 6. Gomb (Hatalmas gomb) -->
+              <button type="submit"
+                class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black py-5 mt-2 rounded-full shadow-lg shadow-emerald-500/20 transition text-base">Kérés
+                beküldése</button>
+            </form>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <!-- JOBB OLDAL (Egyesített Autók Kártya) -->
+        <div class="lg:col-span-8 xl:col-span-9 w-full">
+          <div class="bg-white/5 backdrop-blur-xl border border-white/20 rounded-[24px] shadow-lg p-6 flex flex-col h-full">
+            
+            <!-- Fejléc (Most már a kártya része) -->
+            <div id="kliensHeader" class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+              <h4 class="font-bold text-lg flex items-center gap-2 text-white"><span>🚘</span> Autók</h4>
+            </div>
+            
+            <!-- Kártyák Gridje -->
+            <div id="kliensListaContainer" class="w-full">
+              <div id="autoList" class="grid grid-cols-1 xl:grid-cols-2 gap-5"></div>
+            </div>
+            
+          </div>
+        </div>
+    <!-- ================= SOFŐR FŐOLDAL VÉGE ================= -->
   </main>
 
   <!-- ======================= REJTETT MODALOK ======================= -->
@@ -607,8 +648,7 @@
     <div class="theme-card p-8 rounded-3xl w-full max-w-6xl relative glass-panel max-h-[90vh] flex flex-col">
       <button onclick="closeModal('manageFleetModal')"
         class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-      <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>🚘</span> Flotta Kezelése (Módosítás /
-        Szerviz / Törlés)</h4>
+      <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>🚘</span> Flotta Kezelése</h4>
       <div class="overflow-y-auto flex-1 pr-2 custom-scrollbar">
         <div id="adminAutoList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </div>
@@ -666,7 +706,7 @@
         </div>
         <select id="autoStatusz" class="theme-input rounded-xl p-4 w-full font-bold">
           <option value="ELERHETO">ELÉRHETŐ</option>
-          <option value="FOGLALT">FOGLALT</option>
+          <option value="FOGLALT">NEM ELÉRHETŐ</option>
         </select>
         <button type="submit"
           class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 text-lg">Hozzáadás
@@ -724,6 +764,32 @@
     </div>
   </div>
 
+  <div id="allSzervizHistoryModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
+    <div class="theme-card p-8 rounded-3xl w-full max-w-4xl relative glass-panel max-h-[90vh] flex flex-col z-[60]">
+      <button onclick="closeModal('allSzervizHistoryModal')"
+        class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
+      <h4 class="font-bold mb-6 text-xl theme-text flex items-center gap-3"><span>🛠️</span> Teljes Szerviztörténet</h4>
+      <div class="overflow-x-auto overflow-y-auto flex-1 rounded-2xl theme-border custom-scrollbar">
+        <table class="w-full text-left border-collapse">
+          <thead class="text-xs uppercase tracking-widest font-black theme-muted">
+            <tr>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900">Dátum</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900">Rendszám</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900">Kilométer</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900">Leírás</th>
+            </tr>
+          </thead>
+          <tbody id="allSzervizHistoryList" class="text-sm">
+            <tr>
+              <td colspan="4" class="py-8 text-center theme-muted font-bold">Adatok betöltése...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div id="historyModal"
     class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
     <div class="theme-card p-8 rounded-3xl w-full max-w-6xl relative glass-panel max-h-[90vh] flex flex-col z-[60]">
@@ -769,8 +835,7 @@
         <input type="text" id="editUsername" readonly
           class="theme-input rounded-xl p-3.5 w-full text-center tracking-widest font-mono cursor-not-allowed opacity-70">
         <div>
-          <label class="text-[10px] theme-muted uppercase font-bold ml-1">Új jelszó (Hagyd üresen, ha marad a
-            régi)</label>
+          <label class="text-[10px] theme-muted uppercase font-bold ml-1">Új jelszó</label>
           <input type="password" id="editUserPassword" class="theme-input rounded-xl p-3.5 w-full font-medium"
             placeholder="Új jelszó">
         </div>
@@ -782,8 +847,7 @@
           </select>
         </div>
         <button type="submit"
-          class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/30 mt-4 text-lg">Változtatások
-          Mentése</button>
+          class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/30 mt-4 text-lg">Mentés</button>
       </form>
     </div>
   </div>
@@ -809,11 +873,10 @@
         </div>
         <select id="editStatusz" class="theme-input rounded-xl p-3.5 w-full font-bold">
           <option value="ELERHETO">ELÉRHETŐ</option>
-          <option value="FOGLALT">FOGLALT</option>
+          <option value="FOGLALT">NEM ELÉRHETŐ</option>
         </select>
         <button type="submit"
-          class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/30 mt-4 text-lg">Változtatások
-          Mentése</button>
+          class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/30 mt-4 text-lg">Mentés</button>
       </form>
     </div>
   </div>
@@ -863,6 +926,9 @@
             class="theme-input rounded-xl p-4 w-full font-mono text-lg text-center"></div>
         <div><label class="text-xs theme-muted uppercase font-bold ml-1">Fogyasztott (Liter)</label><input type="number"
             step="0.1" id="lezarFogyasztas" placeholder="0.0" required
+            class="theme-input rounded-xl p-4 w-full font-mono text-lg text-center"></div>
+        <div><label class="text-xs theme-muted uppercase font-bold ml-1">Aktuális Kilométeróra (km)</label><input
+            type="number" id="lezarKm" placeholder="pl. 145000" required
             class="theme-input rounded-xl p-4 w-full font-mono text-lg text-center"></div>
         <button type="submit"
           class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 mt-6 flex items-center justify-center gap-2 text-lg"><span>✔</span>
