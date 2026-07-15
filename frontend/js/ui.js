@@ -4,6 +4,12 @@ let debounceTimer = null;
 window.currentFlotta = [];
 let costChartInstance = null;
 
+// Globális változók a modalokhoz
+window.currentRiasztasok = [];
+window.currentBeerkezok = [];
+window.currentAktivFlotta = [];
+window.currentRangsor = [];
+
 const socket = (typeof io !== 'undefined') ? io('http://localhost:3000') : null;
 
 window.showNotification = function (msg) {
@@ -34,7 +40,7 @@ if (socket) {
   });
 }
 
-window.initScrollReveal = function() {
+window.initScrollReveal = function () {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) entry.target.classList.add('active');
@@ -69,19 +75,18 @@ document.addEventListener('DOMContentLoaded', () => {
   if (localStorage.getItem('drivecheck_theme') === 'light') document.body.classList.add('light-theme');
 });
 
-// --- MENÜK ÉS MODALOK KEZELÉSE ---
-window.toggleDropdown = function(dropdownId, event) {
+window.toggleDropdown = function (dropdownId, event) {
   if (event) event.stopPropagation();
   const dropdown = document.getElementById(dropdownId);
   const isHidden = dropdown.classList.contains('hidden');
-  closeAllDropdowns(); 
+  closeAllDropdowns();
   if (isHidden) {
     dropdown.classList.remove('hidden');
     dropdown.classList.add('fade-in');
   }
 };
 
-window.closeAllDropdowns = function() {
+window.closeAllDropdowns = function () {
   ['addDropdownContent', 'historyDropdownContent', 'manageDropdownContent'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
@@ -98,15 +103,15 @@ document.addEventListener('click', (e) => {
   }
 });
 
-window.closeModal = function(modalId) { document.getElementById(modalId).classList.add('hidden'); };
-window.openModalWithAnim = function(modalId) {
+window.closeModal = function (modalId) { document.getElementById(modalId).classList.add('hidden'); };
+window.openModalWithAnim = function (modalId) {
   const modal = document.getElementById(modalId);
   modal.classList.remove('hidden');
   const card = modal.querySelector('.glass-panel');
   if (card) card.classList.add('fade-in');
 };
 
-window.openEditModal = function(rendszam) {
+window.openEditModal = function (rendszam) {
   const auto = window.currentFlotta.find(a => a.rendszam === rendszam);
   if (!auto) return;
   document.getElementById('editRendszam').value = auto.rendszam;
@@ -117,9 +122,9 @@ window.openEditModal = function(rendszam) {
   document.getElementById('editRovinieta').value = auto.rovinieta ? auto.rovinieta.split('T')[0] : '';
   openModalWithAnim('editAutoModal');
 };
-window.closeEditModal = function() { closeModal('editAutoModal'); };
+window.closeEditModal = function () { closeModal('editAutoModal'); };
 
-window.openSzervizModal = async function(rendszam) {
+window.openSzervizModal = async function (rendszam) {
   document.getElementById('szervizModalTitle').innerHTML = `🛠️ <span class="text-blue-400 font-mono tracking-widest">${rendszam}</span> Szerviztörténet`;
   document.getElementById('szervizAutoRendszam').value = rendszam;
   const lista = document.getElementById('szervizLista');
@@ -141,17 +146,16 @@ window.openSzervizModal = async function(rendszam) {
     }
   } catch (e) { lista.innerHTML = '<div class="text-red-400 text-sm py-8 font-bold text-center">Hiba történt.</div>'; }
 };
-window.closeSzervizModal = function() { closeModal('szervizModal'); };
+window.closeSzervizModal = function () { closeModal('szervizModal'); };
 
-window.openLezarModal = function(id, rendszam) {
+window.openLezarModal = function (id, rendszam) {
   document.getElementById('lezarUtId').value = id;
   document.getElementById('lezarModalTitle').innerHTML = `⛽ Fuvar Lezárása: <span class="text-emerald-400 font-mono">#${id}</span> (${rendszam})`;
   openModalWithAnim('lezarModal');
 };
-window.closeLezarModal = function() { closeModal('lezarModal'); };
+window.closeLezarModal = function () { closeModal('lezarModal'); };
 
-// --- RENDER UI (SZEPARÁLT NÉZETEK) ---
-window.renderUI = async function() {
+window.renderUI = async function () {
   const token = window.AppState?.token;
   const currentUser = window.AppState?.user;
 
@@ -160,6 +164,7 @@ window.renderUI = async function() {
     document.getElementById('adminSection').classList.add('hidden');
     document.getElementById('kliensSection').classList.add('hidden');
     document.getElementById('userInfo').classList.add('hidden');
+    document.body.classList.remove('admin-mode');
     return;
   }
 
@@ -174,16 +179,17 @@ window.renderUI = async function() {
     : "px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-400 border border-blue-500/30 mt-1";
 
   if (currentUser.role === 'ADMIN') {
+    document.body.classList.add('admin-mode');
     document.getElementById('adminSection').classList.remove('hidden');
     document.getElementById('adminSection').classList.add('fade-in');
-    
-    if(document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.remove('hidden');
-    if(document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.remove('hidden');
-    if(document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.remove('hidden');
+
+    if (document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.remove('hidden');
+    if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.remove('hidden');
+    if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.remove('hidden');
 
     document.getElementById('kliensHeader').classList.add('hidden');
     document.getElementById('soforUrlapContainer').classList.add('hidden');
-    if(document.getElementById('kliensListaContainer')) document.getElementById('kliensListaContainer').classList.add('hidden');
+    if (document.getElementById('kliensListaContainer')) document.getElementById('kliensListaContainer').classList.add('hidden');
 
     if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok();
     if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
@@ -192,15 +198,16 @@ window.renderUI = async function() {
     if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
     if (typeof loadFlottaStatisztika === 'function') loadFlottaStatisztika();
   } else {
+    document.body.classList.remove('admin-mode');
     document.getElementById('adminSection').classList.add('hidden');
-    
-    if(document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.add('hidden');
-    if(document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.add('hidden');
-    if(document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.add('hidden');
+
+    if (document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.add('hidden');
+    if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.add('hidden');
+    if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.add('hidden');
 
     document.getElementById('kliensHeader').classList.remove('hidden');
     document.getElementById('soforUrlapContainer').classList.remove('hidden');
-    if(document.getElementById('kliensListaContainer')) document.getElementById('kliensListaContainer').classList.remove('hidden');
+    if (document.getElementById('kliensListaContainer')) document.getElementById('kliensListaContainer').classList.remove('hidden');
   }
 
   document.getElementById('kliensSection').classList.remove('hidden');
@@ -213,15 +220,14 @@ window.renderUI = async function() {
   if (typeof loadUtak === 'function') loadUtak();
 };
 
-// --- TÉRKÉP ---
-window.resetDistanceField = function(resetStart = true, resetEnd = true) {
+window.resetDistanceField = function (resetStart = true, resetEnd = true) {
   if (resetStart) startCoords = { lat: 0, lon: 0 };
   if (resetEnd) endCoords = { lat: 0, lon: 0 };
   const tavInput = document.getElementById('utTav');
   if (tavInput) { tavInput.value = ''; tavInput.classList.remove('border-emerald-500', 'text-emerald-400'); }
 };
 
-window.searchOSM = function(inputEl, dropdownId) {
+window.searchOSM = function (inputEl, dropdownId) {
   clearTimeout(debounceTimer);
   if (inputEl.id === 'utIndulas') resetDistanceField(true, false);
   if (inputEl.id === 'utErkezes') resetDistanceField(false, true);
@@ -247,7 +253,7 @@ window.searchOSM = function(inputEl, dropdownId) {
   }, 600);
 };
 
-window.selectLocation = async function(inputId, dropdownId, locationName, lat, lon) {
+window.selectLocation = async function (inputId, dropdownId, locationName, lat, lon) {
   document.getElementById(inputId).value = locationName;
   document.getElementById(dropdownId).classList.add('hidden');
   if (inputId === 'utIndulas') startCoords = { lat, lon };
@@ -267,44 +273,258 @@ window.selectLocation = async function(inputId, dropdownId, locationName, lat, l
   }
 };
 
-// --- ADAT LOKÁCIÓK ÉS GENERÁLÓK ---
 function formatDateStr(isoStr) { return isoStr ? isoStr.split('T')[0] : 'Nincs adat'; }
 
-window.loadAktivFlotta = async function() {
+// --- ÉLŐ FLOTTAKÖVETÉS LOGIKA ---
+window.generateAktivFlottaHtml = function (u) {
+  return `
+    <div class="glass-panel p-4 flex flex-col gap-3 hover:bg-white/5 transition-all mb-2 shrink-0">
+      <div class="flex justify-between items-start">
+        <div class="font-black text-white flex items-center gap-2">🚘 <span class="font-mono text-blue-400 text-sm tracking-widest">${u.auto_rendszam}</span></div>
+        <span class="flex items-center gap-1 text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/50 px-2 py-1 rounded-md tracking-widest font-black uppercase">
+          <div class="w-1 h-1 rounded-full bg-blue-400 animate-pulse"></div> ÚTON
+        </span>
+      </div>
+      <div class="text-[11px] text-slate-400 font-bold">👤 Sofőr: <span class="text-white">${u.sofor_nev}</span></div>
+      <div class="bg-black/20 p-2.5 rounded-xl border border-white/5 text-[10px] text-slate-300 flex flex-col gap-1 font-medium">
+        <span class="truncate" title="${u.indulas}">${u.indulas.split(',')[0]}</span> 
+        <span class="text-blue-400 text-center leading-none">⬇</span> 
+        <span class="truncate text-right" title="${u.erkezes}">${u.erkezes.split(',')[0]}</span>
+      </div>
+    </div>`;
+};
+
+window.openAllFlottaModal = function () {
+  const modalList = document.getElementById('allFlottaList');
+  if (modalList) {
+    modalList.innerHTML = window.currentAktivFlotta.map(u => window.generateAktivFlottaHtml(u)).join('');
+  }
+  openModalWithAnim('allFlottaModal');
+};
+
+window.loadAktivFlotta = async function () {
   const token = window.AppState.token; if (!token || window.AppState.user.role !== 'ADMIN') return;
   const container = document.getElementById('aktivFlottaList');
+  if (!container) return;
   try {
     const aktivUtak = await API.fetchAktivFlotta(token);
+    window.currentAktivFlotta = aktivUtak;
+
+    const modalList = document.getElementById('allFlottaList');
+    if (modalList && !document.getElementById('allFlottaModal').classList.contains('hidden')) {
+      modalList.innerHTML = aktivUtak.map(u => window.generateAktivFlottaHtml(u)).join('');
+    }
+
     if (!Array.isArray(aktivUtak) || aktivUtak.length === 0) {
-      container.innerHTML = `
-    <div class="col-span-full py-12 flex flex-col items-center justify-center glass-panel border-2 border-dashed border-white/10 rounded-3xl">
-      <div class="text-5xl mb-4 opacity-50">📡</div>
-      <p class="font-black text-white text-lg tracking-tight">A flotta épp pihen</p>
-      <p class="text-slate-400 text-sm mt-2 font-medium">Jelenleg nincs aktív kirendelés.</p>
-    </div>`;
+      container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">A flotta pihen.</div>`;
       initScrollReveal();
       return;
     }
-    container.innerHTML = aktivUtak.map((u, i) => `
-      <div class="glass-panel p-5 flex flex-col gap-4 hover:bg-white/5 transition-all">
-        <div class="flex justify-between items-start">
-          <div class="font-black text-white flex items-center gap-2">🚘 <span class="font-mono text-blue-400 text-xl tracking-widest">${u.auto_rendszam}</span></div>
-          <span class="flex items-center gap-1.5 text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/50 px-2.5 py-1 rounded-md tracking-widest font-black uppercase">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div> ÚTON
-          </span>
-        </div>
-        <div class="text-xs text-slate-400 font-bold">👤 Sofőr: <span class="text-white text-sm">${u.sofor_nev}</span></div>
-        <div class="bg-black/20 p-3 rounded-xl border border-white/5 text-xs text-slate-300 flex items-center justify-between font-medium">
-          <span class="truncate max-w-[100px]" title="${u.indulas}">${u.indulas.split(',')[0]}</span> 
-          <span class="text-blue-400 text-lg mx-2">➔</span> 
-          <span class="truncate max-w-[100px] text-right" title="${u.erkezes}">${u.erkezes.split(',')[0]}</span>
-        </div>
+
+    const MAX_ITEMS = 2; // Max 2 db a főoldalon
+    let html = '';
+    const toShow = aktivUtak.slice(0, MAX_ITEMS);
+
+    html += toShow.map(u => `
+      <div class="glass-panel p-3 text-xs flex justify-between items-center transition hover:bg-white/5">
+        <span class="font-mono font-bold text-blue-400">${u.auto_rendszam}</span>
+        <span class="text-[10px] bg-blue-500/20 px-2 py-0.5 rounded text-blue-400 font-bold tracking-wider">Úton</span>
       </div>`).join('');
+
+    if (aktivUtak.length > MAX_ITEMS) {
+      const extraCount = aktivUtak.length - MAX_ITEMS;
+      html += `<button onclick="openAllFlottaModal()" class="w-full py-2 mt-1 shrink-0 text-[11px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">+ További ${extraCount} jármű</button>`;
+    }
+    container.innerHTML = html;
     initScrollReveal();
   } catch (e) { }
 };
 
-window.loadAutok = async function() {
+// --- FLOTTA RANGSOR LOGIKA ---
+window.generateRangsorHtml = function (rendszam, data) {
+  return `
+    <div class="glass-panel flex flex-col p-3 transition hover:bg-white/5 mb-2 shrink-0">
+      <div class="flex justify-between items-center mb-1">
+        <span class="font-mono font-black text-emerald-400 tracking-widest text-sm">${rendszam}</span>
+        <span class="text-[9px] bg-white/10 text-slate-300 px-2 py-1 rounded-md font-bold uppercase">${data.db} fuvar</span>
+      </div>
+      <div class="flex items-end gap-1">
+        <span class="font-black text-white text-lg">${data.km.toFixed(1)}</span>
+        <span class="text-[10px] text-slate-400 font-bold mb-0.5">km</span>
+      </div>
+    </div>`;
+};
+
+window.openAllRangsorModal = function () {
+  const modalList = document.getElementById('allRangsorList');
+  if (modalList) {
+    modalList.innerHTML = window.currentRangsor.map(([rendszam, data]) => window.generateRangsorHtml(rendszam, data)).join('');
+  }
+  openModalWithAnim('allRangsorModal');
+};
+
+window.loadFlottaStatisztika = async function () {
+  const container = document.getElementById('flottaRangsor');
+  if (!container) return;
+  try {
+    const res = await fetch('http://localhost:3000/api/admin/statisztika/flotta', { headers: { 'Authorization': `Bearer ${window.AppState.token}` } });
+    const stats = await res.json();
+    const sortedStats = Object.entries(stats).sort((a, b) => b[1].km - a[1].km);
+    window.currentRangsor = sortedStats;
+
+    const modalList = document.getElementById('allRangsorList');
+    if (modalList && !document.getElementById('allRangsorModal').classList.contains('hidden')) {
+      modalList.innerHTML = sortedStats.map(([rendszam, data]) => window.generateRangsorHtml(rendszam, data)).join('');
+    }
+
+    if (sortedStats.length === 0) {
+      container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Még nincs adat.</div>`;
+      initScrollReveal();
+      return;
+    }
+
+    const MAX_ITEMS = 2; // Max 2 db a főoldalon
+    let html = '';
+    const toShow = sortedStats.slice(0, MAX_ITEMS);
+
+    html += toShow.map(([rendszam, data]) => `
+      <div class="glass-panel p-3 text-xs flex justify-between items-center transition hover:bg-white/5">
+        <span class="font-mono font-bold text-emerald-400">${rendszam}</span>
+        <span class="font-bold text-white">${data.km.toFixed(0)} km</span>
+      </div>`).join('');
+
+    if (sortedStats.length > MAX_ITEMS) {
+      const extraCount = sortedStats.length - MAX_ITEMS;
+      html += `<button onclick="openAllRangsorModal()" class="w-full py-2 mt-1 shrink-0 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition border border-emerald-500/20">+ További ${extraCount} autó</button>`;
+    }
+    container.innerHTML = html;
+    initScrollReveal();
+  } catch (e) { console.error(e); }
+};
+
+// --- ÉRTESÍTÉSEK LOGIKA ---
+window.generateAlertHtml = function (r) {
+  const isWarning = r.includes('⚠️');
+  // A 'text-white' sötét módban fehér, a 'light-theme' osztály alatt pedig automatikusan sötét lesz a CSS-ed miatt
+  return `<div class="glass-panel py-3 px-4 reveal active border-l-4 ${isWarning ? 'border-l-amber-500 bg-amber-500/10' : 'border-l-red-500 bg-red-500/10'} flex gap-3 items-start shadow-sm mb-2 shrink-0">
+            <span class="text-lg leading-none mt-0.5">${isWarning ? '⚠️' : '🚨'}</span> 
+            <span class="text-[13px] font-black leading-snug text-white">${r.replace('⚠️ ', '').replace('🚨 ', '')}</span>
+          </div>`;
+};
+
+window.openAllAlertsModal = function () {
+  const modalList = document.getElementById('allAlertsList');
+  if (modalList) {
+    modalList.innerHTML = window.currentRiasztasok.map(r => generateAlertHtml(r)).join('');
+  }
+  openModalWithAnim('allAlertsModal');
+};
+
+window.loadRiasztasok = async function () {
+  const token = window.AppState.token;
+  if (!token || window.AppState.user.role !== 'ADMIN') return;
+  const container = document.getElementById('alertContainer');
+  if (!container) return;
+  try {
+    const riasztasok = await API.fetchAlerts(token);
+    window.currentRiasztasok = riasztasok;
+
+    const modalList = document.getElementById('allAlertsList');
+    if (modalList && !document.getElementById('allAlertsModal').classList.contains('hidden')) {
+      modalList.innerHTML = riasztasok.map(r => generateAlertHtml(r)).join('');
+    }
+
+    if (Array.isArray(riasztasok) && riasztasok.length > 0) {
+      const MAX_ITEMS = 3; // Mindig 3 db jelenik meg maximum
+      let html = '';
+      const toShow = riasztasok.slice(0, MAX_ITEMS);
+      html += toShow.map(r => generateAlertHtml(r)).join('');
+
+      if (riasztasok.length > MAX_ITEMS) {
+        const extraCount = riasztasok.length - MAX_ITEMS;
+        html += `<button onclick="openAllAlertsModal()" class="w-full py-2 mt-2 shrink-0 text-xs font-bold text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl transition border border-amber-500/20">+ További ${extraCount} értesítés mutatása</button>`;
+      }
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = `<div class="text-center py-6 text-emerald-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">✅ Nincs aktív riasztás.</div>`;
+    }
+  } catch (e) { console.error(e); }
+};
+
+// --- ENGEDÉLYEZÉSEK LOGIKA ---
+window.generateRequestHtml = function (f) {
+  const autoTipus = f.auto ? f.auto.tipus : 'Ismeretlen típus';
+
+  return `<div class="req-card py-4 px-5 mb-3 shrink-0 rounded-2xl transition-all duration-300">
+            <div class="flex justify-between items-center mb-2">
+              <p class="req-title text-sm font-black flex items-center gap-2">
+                <span class="text-blue-500 text-base drop-shadow-sm">📩</span> 
+                <span class="font-mono tracking-widest text-[15px]">${f.auto_rendszam}</span>
+                <span class="req-sub text-[10px] uppercase font-bold tracking-widest ml-1">${autoTipus}</span>
+              </p>
+            </div>
+            
+            <p class="text-xs leading-relaxed font-bold">
+              <span class="req-title text-sm block mb-1">${f.sofor_nev}</span>
+              <span class="req-sub">${f.indulas.split(',')[0]} ➔ ${f.erkezes.split(',')[0]}</span> 
+              <span class="text-emerald-500 font-black ml-1">(${f.tavolsag} km)</span>
+            </p>
+            
+            <div class="flex gap-3 mt-4">
+               <button onclick="biralUtFizikai(${f.id}, 'JOVAHAGYOTT')" 
+                       class="flex-1 req-btn-approve font-black py-2.5 rounded-xl text-[11px] uppercase tracking-wider transition shadow-sm">
+                 ✔ JÓVÁHAGY
+               </button>
+               <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" 
+                       class="flex-1 req-btn-reject font-black py-2.5 rounded-xl text-[11px] uppercase tracking-wider transition shadow-sm">
+                 ✖ ELVET
+               </button>
+            </div>
+          </div>`;
+};
+
+window.openAllRequestsModal = function () {
+  const modalList = document.getElementById('allRequestsList');
+  if (modalList) {
+    modalList.innerHTML = window.currentBeerkezok.map(f => generateRequestHtml(f)).join('');
+  }
+  openModalWithAnim('allRequestsModal');
+};
+
+window.loadBeerkezoList = async function () {
+  const container = document.getElementById('beerkezoList');
+  if (!container) return;
+  try {
+    const res = await fetch('http://localhost:3000/api/admin/beerkezo-fuvarok', { headers: { 'Authorization': `Bearer ${window.AppState.token}` } });
+    const fuvarok = await res.json();
+    window.currentBeerkezok = fuvarok;
+
+    const modalList = document.getElementById('allRequestsList');
+    if (modalList && !document.getElementById('allRequestsModal').classList.contains('hidden')) {
+      modalList.innerHTML = fuvarok.map(f => generateRequestHtml(f)).join('');
+    }
+
+    if (!Array.isArray(fuvarok) || fuvarok.length === 0) {
+      container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Jelenleg nincs kérelem.</div>`;
+      initScrollReveal();
+      return;
+    }
+
+    const MAX_ITEMS = 2; // Mindig 2 db jelenik meg maximum
+    let html = '';
+    const toShow = fuvarok.slice(0, MAX_ITEMS);
+    html += toShow.map(f => generateRequestHtml(f)).join('');
+
+    if (fuvarok.length > MAX_ITEMS) {
+      const extraCount = fuvarok.length - MAX_ITEMS;
+      html += `<button onclick="openAllRequestsModal()" class="w-full py-2 mt-2 shrink-0 text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">+ További ${extraCount} kérelem mutatása</button>`;
+    }
+    container.innerHTML = html;
+    initScrollReveal();
+  } catch (e) { console.error(e); }
+};
+
+window.loadAutok = async function () {
   const token = window.AppState.token; const currentUser = window.AppState.user;
   if (!token) return;
   const datumInput = document.getElementById('utDatum');
@@ -316,10 +536,8 @@ window.loadAutok = async function() {
     if (!Array.isArray(autok)) return;
 
     window.currentFlotta = autok;
-    
-    // SOFŐR (Lenti nézet, gombok nélkül)
+
     const autoListContainer = document.getElementById('autoList');
-    // ADMIN (A Modal belseje, ahol ott vannak a gombok!)
     const adminAutoListContainer = document.getElementById('adminAutoList');
 
     if (autok.length === 0) {
@@ -329,8 +547,8 @@ window.loadAutok = async function() {
           <p class="font-black text-white text-lg tracking-tight">A járműpark üres</p>
           <p class="text-slate-400 text-sm mt-2 font-medium">Nincs regisztrált autó a rendszerben.</p>
         </div>`;
-      if(autoListContainer) autoListContainer.innerHTML = emptyHtml;
-      if(adminAutoListContainer) adminAutoListContainer.innerHTML = emptyHtml;
+      if (autoListContainer) autoListContainer.innerHTML = emptyHtml;
+      if (adminAutoListContainer) adminAutoListContainer.innerHTML = emptyHtml;
     } else {
       let driverHtml = '';
       let adminHtml = '';
@@ -364,11 +582,11 @@ window.loadAutok = async function() {
         adminHtml += `<div class="glass-panel group p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/5">${commonHeader}${adminBtns}</div>`;
       });
 
-      if(autoListContainer) autoListContainer.innerHTML = driverHtml;
-      if(adminAutoListContainer) adminAutoListContainer.innerHTML = adminHtml;
+      if (autoListContainer) autoListContainer.innerHTML = driverHtml;
+      if (adminAutoListContainer) adminAutoListContainer.innerHTML = adminHtml;
     }
 
-    initScrollReveal(); 
+    initScrollReveal();
 
     const rendszamSelect = document.getElementById('utRendszam');
     if (rendszamSelect && currentUser.role === 'USER') {
@@ -385,8 +603,7 @@ window.loadAutok = async function() {
   } catch (e) { }
 };
 
-// --- SZEMÉLYZET KEZELÉSE ---
-window.loadSzemelyzet = async function() {
+window.loadSzemelyzet = async function () {
   const container = document.getElementById('staffList');
   if (!container) return;
   try {
@@ -396,15 +613,15 @@ window.loadSzemelyzet = async function() {
       return;
     }
     const users = await res.json();
-    if(users.length === 0) {
-       container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-slate-400 font-bold">Nincsenek felhasználók.</td></tr>';
-       return;
+    if (users.length === 0) {
+      container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-slate-400 font-bold">Nincsenek felhasználók.</td></tr>';
+      return;
     }
     container.innerHTML = users.map(u => `
       <tr class="border-b border-white/5 hover:bg-white/5">
         <td class="py-4 px-5 text-slate-400 text-xs font-mono">#${u.id}</td>
         <td class="py-4 px-5 font-black text-white">${u.username}</td>
-        <td class="py-4 px-5"><span class="px-2 py-1 text-[10px] uppercase tracking-widest font-black rounded-lg ${u.role==='ADMIN'?'bg-amber-500/20 text-amber-500 border border-amber-500/30':'bg-blue-500/20 text-blue-400 border border-blue-500/30'}">${u.role}</span></td>
+        <td class="py-4 px-5"><span class="px-2 py-1 text-[10px] uppercase tracking-widest font-black rounded-lg ${u.role === 'ADMIN' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}">${u.role}</span></td>
         <td class="py-4 px-5 text-right flex justify-end gap-2">
            <button onclick="openEditUserModal(${u.id}, '${u.username}', '${u.role}')" class="glass-btn bg-amber-500/20 text-amber-400 hover:bg-amber-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">✏️ Módosít</button>
            <button onclick="deleteUserAction(${u.id}, '${u.username}')" class="glass-btn bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">🗑️ Törlés</button>
@@ -416,20 +633,20 @@ window.loadSzemelyzet = async function() {
   }
 };
 
-window.openEditUserModal = function(id, username, role) {
+window.openEditUserModal = function (id, username, role) {
   document.getElementById('editUserId').value = id;
   document.getElementById('editUsername').value = username;
   document.getElementById('editUserRole').value = role;
-  document.getElementById('editUserPassword').value = ''; 
+  document.getElementById('editUserPassword').value = '';
   openModalWithAnim('editUserModal');
 };
 
-window.submitEditUser = async function(event) {
+window.submitEditUser = async function (event) {
   event.preventDefault();
   const id = document.getElementById('editUserId').value;
   const role = document.getElementById('editUserRole').value;
   const password = document.getElementById('editUserPassword').value;
-  
+
   let data = { role };
   if (password.trim() !== '') data.password = password;
 
@@ -448,10 +665,10 @@ window.submitEditUser = async function(event) {
     closeModal('editUserModal');
     loadSzemelyzet();
     if (typeof loadAuditLog === 'function') loadAuditLog();
-  } catch(e) { alert('Hálózati hiba történt.'); }
+  } catch (e) { alert('Hálózati hiba történt.'); }
 };
 
-window.deleteUserAction = async function(id, username) {
+window.deleteUserAction = async function (id, username) {
   if (!confirm(`Biztosan véglegesen törölni szeretnéd a(z) ${username} fiókot?`)) return;
   try {
     const res = await fetch(`http://localhost:3000/api/admin/users/${id}`, {
@@ -466,44 +683,18 @@ window.deleteUserAction = async function(id, username) {
     showNotification(`A(z) ${username} fiók sikeresen törölve!`);
     loadSzemelyzet();
     if (typeof loadAuditLog === 'function') loadAuditLog();
-  } catch(e) { alert('Hálózati hiba történt.'); }
+  } catch (e) { alert('Hálózati hiba történt.'); }
 };
 
-window.loadFlottaStatisztika = async function () {
-  const container = document.getElementById('flottaRangsor');
-  if (!container) return;
-  try {
-    const res = await fetch('http://localhost:3000/api/admin/statisztika/flotta', { headers: { 'Authorization': `Bearer ${window.AppState.token}` } });
-    const stats = await res.json();
-    const sortedStats = Object.entries(stats).sort((a, b) => b[1].km - a[1].km);
-
-    if (sortedStats.length === 0) {
-      container.innerHTML = `<div class="col-span-full text-center py-6 text-slate-400 text-sm font-bold glass-panel border-2 border-dashed border-white/10 rounded-2xl">Még nincs teljesített fuvar a rendszerben.</div>`;
-      initScrollReveal();
-      return;
-    }
-    container.innerHTML = sortedStats.map(([rendszam, data], index) => `
-      <div class="glass-panel flex flex-col p-4 transition hover:bg-white/5">
-        <div class="flex justify-between items-center mb-2">
-          <span class="font-mono font-black text-blue-400 tracking-widest text-lg">${rendszam}</span>
-          <span class="text-xs bg-white/10 text-slate-300 px-2 py-1 rounded-md font-bold uppercase">${data.db} fuvar</span>
-        </div>
-        <div class="flex items-end gap-1">
-          <span class="font-black text-white text-2xl">${data.km.toFixed(1)}</span>
-          <span class="text-sm text-slate-400 font-bold mb-1">km</span>
-        </div>
-      </div>`).join('');
-    initScrollReveal();
-  } catch (e) { console.error(e); }
-};
-
-window.loadUtak = async function() {
+window.loadUtak = async function () {
   const token = window.AppState.token; const currentUser = window.AppState.user; if (!token || !currentUser) return;
-  const szuro = currentUser.role === 'ADMIN' ? (document.getElementById('adminKerelmekSzuro')?.value || '') : (document.getElementById('kerelmekSzuro')?.value || '');
+
+  const szuro = document.getElementById('adminKerelmekSzuro')?.value || '';
+
   try {
     const utak = await API.fetchUtak(token, currentUser.role === 'ADMIN', szuro);
     if (!Array.isArray(utak)) return;
-    
+
     let htmlContent = '';
     if (utak.length === 0) {
       htmlContent = '<tr><td colspan="7" class="py-8 text-center text-slate-400 text-sm font-bold">Nincs megjeleníthető adat.</td></tr>';
@@ -551,39 +742,8 @@ window.loadUtak = async function() {
       }).join('');
     }
 
-    if(document.getElementById('utList')) document.getElementById('utList').innerHTML = htmlContent;
-    if(document.getElementById('adminUtList')) document.getElementById('adminUtList').innerHTML = htmlContent;
+    if (document.getElementById('adminUtList')) document.getElementById('adminUtList').innerHTML = htmlContent;
   } catch (e) { }
-};
-
-window.loadBeerkezoList = async function () {
-  const container = document.getElementById('beerkezoList');
-  if (!container) return;
-  try {
-    const res = await fetch('http://localhost:3000/api/admin/beerkezo-fuvarok', { headers: { 'Authorization': `Bearer ${window.AppState.token}` } });
-    const fuvarok = await res.json();
-    if (!Array.isArray(fuvarok) || fuvarok.length === 0) {
-      container.innerHTML = `<div class="text-center py-6 text-slate-400 text-sm font-bold glass-panel border-2 border-dashed border-white/10 rounded-2xl mb-4">✅ Jelenleg nincs engedélyezésre váró fuvarigény.</div>`;
-      initScrollReveal();
-      return;
-    }
-    container.innerHTML = fuvarok.map(f => `
-      <div class="glass-panel p-4 hover:bg-white/5 transition-all mb-3 flex flex-col md:flex-row justify-between items-center gap-4 border-l-4 border-l-blue-500">
-        <div class="w-full md:w-auto text-left">
-          <p class="text-white text-sm font-bold flex items-center gap-2">
-            <span class="text-blue-400 text-lg">📩</span> Új fuvarigény: <span class="font-mono text-blue-400 tracking-widest">${f.auto_rendszam}</span>
-          </p>
-          <p class="text-xs text-slate-400 mt-1 md:ml-7">
-            Sofőr: <span class="font-bold text-white">${f.sofor_nev}</span> | ${f.indulas.split(',')[0]} ➔ ${f.erkezes.split(',')[0]} (${f.tavolsag} km)
-          </p>
-        </div>
-        <div class="flex gap-2 w-full md:w-auto">
-           <button onclick="biralUtFizikai(${f.id}, 'JOVAHAGYOTT')" class="glass-btn flex-1 md:flex-none bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 px-5 py-2.5 rounded-lg text-xs font-black">JÓVÁHAGYÁS</button>
-           <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" class="glass-btn flex-1 md:flex-none bg-red-500/20 text-red-400 hover:bg-red-500/40 px-5 py-2.5 rounded-lg text-xs font-black">ELVETÉS</button>
-        </div>
-      </div>`).join('');
-    initScrollReveal();
-  } catch (e) { console.error(e); }
 };
 
 window.downloadAdvancedJelentes = function (event) {
@@ -662,7 +822,7 @@ window.addAuto = async function (event) {
   }
 };
 
-window.renderDashboard = async function() {
+window.renderDashboard = async function () {
   const token = window.AppState.token; if (!token || typeof Chart === 'undefined') return;
   const ctx = document.getElementById('costChart'); if (!ctx) return;
   try {
@@ -700,7 +860,7 @@ window.renderDashboard = async function() {
   } catch (e) { }
 };
 
-window.loadAuditLog = async function() {
+window.loadAuditLog = async function () {
   const token = window.AppState.token;
   if (!token || window.AppState.user.role !== 'ADMIN') return;
   const container = document.getElementById('auditLogList');
@@ -720,27 +880,4 @@ window.loadAuditLog = async function() {
   } catch (e) { console.error(e); }
 };
 
-window.toggleDateInputs = function() { document.getElementById('dateEnd').classList.toggle('hidden', document.getElementById('periodusTipus').value !== 'intervallum'); };
-
-// --- VISSZAÁLLÍTOTT RENDSZER FIGYELMEZTETÉSEK ---
-window.loadRiasztasok = async function () {
-  const token = window.AppState.token;
-  if (!token || window.AppState.user.role !== 'ADMIN') return;
-
-  const container = document.getElementById('alertContainer');
-  if (!container) return;
-
-  try {
-    const riasztasok = await API.fetchAlerts(token);
-    if (Array.isArray(riasztasok) && riasztasok.length > 0) {
-      container.innerHTML = riasztasok.map(r => {
-        const isWarning = r.includes('⚠️');
-        return `<div class="glass-panel reveal active border-l-4 ${isWarning ? 'border-l-amber-500 text-amber-200 bg-amber-500/10' : 'border-l-red-500 text-red-200 bg-red-500/10'} p-5 mb-4 flex items-center fade-in text-sm font-bold shadow-lg">
-                  <span class="mr-4 text-3xl">${isWarning ? '⚠️' : '🚨'}</span> ${r.replace('⚠️ ', '').replace('🚨 ', '')}
-                </div>`;
-      }).join('');
-    } else {
-      container.innerHTML = '';
-    }
-  } catch (e) { console.error("Hiba a riasztások betöltésekor:", e); }
-};
+window.toggleDateInputs = function () { document.getElementById('dateEnd').classList.toggle('hidden', document.getElementById('periodusTipus').value !== 'intervallum'); };
