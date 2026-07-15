@@ -290,6 +290,35 @@
       background: rgba(239, 68, 68, 1) !important;
       transform: translateY(-1px);
     }
+
+    /* =========================================
+       LENYÍLÓ ABLAKOK (DROPDOWN) STÍLUSAI
+       ========================================= */
+    .dropdown-bg {
+      background-color: #0f172a !important;
+      /* Tömör sötét háttér */
+    }
+
+    .light-theme .dropdown-bg {
+      background-color: #ffffff !important;
+      /* Tömör fehér háttér */
+    }
+
+    .dropdown-item {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .dropdown-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .light-theme .dropdown-item {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .light-theme .dropdown-item:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
   </style>
 
 </head>
@@ -394,7 +423,8 @@
     </div>
 
     <!-- ================= ADMIN FŐOLDAL ================= -->
-    <div id="adminSection" class="hidden mt-4 w-full h-[calc(100vh-100px)]">
+    <div id="adminSection"
+      class="hidden mt-4 w-full h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden custom-scrollbar pb-10">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full h-full pb-4">
 
         <!-- BAL OLDAL (Mostantól fix, nem görgethető!) -->
@@ -439,23 +469,23 @@
 
         </div>
 
-        <!-- KÖZÉPSŐ OSZLOP: Szorosan a tartalomhoz igazodva (h-fit) -->
-        <div class="lg:col-span-4 xl:col-span-5 flex flex-col gap-5 w-full">
+        <!-- KÖZÉPSŐ OSZLOP: Szorosan a tartalomhoz igazodva -->
+        <div class="lg:col-span-4 xl:col-span-5 flex flex-col gap-3 w-full">
 
           <!-- Értesítések -->
-          <div class="theme-card p-5 sm:p-6 rounded-3xl flex flex-col w-full h-fit relative">
-            <h4 class="font-bold mb-3 text-sm flex items-center gap-2 text-amber-500 shrink-0"><span>⚠️</span>
+          <div class="theme-card p-4 rounded-3xl flex flex-col w-full h-fit relative">
+            <h4 class="font-bold mb-2 text-sm flex items-center gap-2 text-amber-500 shrink-0"><span>⚠️</span>
               Értesítések</h4>
             <!-- Nincs scrollbar! -->
             <div id="alertContainer" class="flex flex-col gap-2"></div>
           </div>
 
           <!-- Engedélyezések -->
-          <div class="theme-card p-5 sm:p-6 rounded-3xl flex flex-col w-full h-fit relative">
-            <h4 class="font-bold mb-3 text-sm flex items-center gap-2 text-blue-400 shrink-0"><span>📩</span>
+          <div class="theme-card p-4 rounded-3xl flex flex-col w-full h-fit relative">
+            <h4 class="font-bold mb-2 text-sm flex items-center gap-2 text-blue-400 shrink-0"><span>📩</span>
               Engedélyezések</h4>
-            <!-- Nincs scrollbar! -->
-            <div id="beerkezoList" class="flex flex-col gap-2"></div>
+            <!-- CSS Grid 2 oszloppal! -->
+            <div id="beerkezoList" class="grid grid-cols-1 xl:grid-cols-2 gap-3"></div>
           </div>
 
         </div>
@@ -500,14 +530,14 @@
             <input type="text" id="utIndulas" placeholder="Indulás Helyszíne" required autocomplete="off"
               oninput="searchOSM(this, 'indulasList')" class="theme-input rounded-xl p-4 w-full font-medium">
             <div id="indulasList"
-              class="absolute z-50 left-0 right-0 top-full mt-2 theme-card rounded-2xl shadow-2xl hidden max-h-60 overflow-y-auto border theme-border">
+              class="absolute z-50 left-0 right-0 top-full mt-2 dropdown-bg rounded-2xl shadow-2xl hidden max-h-60 overflow-y-auto border theme-border custom-scrollbar">
             </div>
           </div>
           <div class="relative">
             <input type="text" id="utErkezes" placeholder="Érkezés Célpontja" required autocomplete="off"
               oninput="searchOSM(this, 'erkezesList')" class="theme-input rounded-xl p-4 w-full font-medium">
             <div id="erkezesList"
-              class="absolute z-50 left-0 right-0 top-full mt-2 theme-card rounded-2xl shadow-2xl hidden max-h-60 overflow-y-auto border theme-border">
+              class="absolute z-50 left-0 right-0 top-full mt-2 dropdown-bg rounded-2xl shadow-2xl hidden max-h-60 overflow-y-auto border theme-border custom-scrollbar">
             </div>
           </div>
           <input type="text" id="utTav" placeholder="Távolság" readonly

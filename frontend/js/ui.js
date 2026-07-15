@@ -244,7 +244,7 @@ window.searchOSM = function (inputEl, dropdownId) {
         return dropdown.classList.remove('hidden');
       }
       dropdown.innerHTML = results.map(item => `
-        <div onclick="selectLocation('${inputEl.id}', '${dropdownId}', '${item.display_name.split(',').slice(0, 3).join(', ').trim().replace(/'/g, "\\'")}', ${item.lat}, ${item.lon})" class="p-4 hover:bg-white/10 border-b border-white/5 cursor-pointer flex items-center gap-3 transition">
+        <div onclick="selectLocation('${inputEl.id}', '${dropdownId}', '${item.display_name.split(',').slice(0, 3).join(', ').trim().replace(/'/g, "\\'")}', ${item.lat}, ${item.lon})" class="p-4 dropdown-item cursor-pointer flex items-center gap-3 transition">
           <span class="text-blue-400 text-xl">📍</span>
           <div><div class="text-xs font-bold text-white leading-tight">${item.display_name.split(',').slice(0, 3).join(', ').trim()}</div></div>
         </div>`).join('');
@@ -383,7 +383,7 @@ window.loadFlottaStatisztika = async function () {
       return;
     }
 
-    const MAX_ITEMS = 2; // Max 2 db a főoldalon
+    const MAX_ITEMS = 3; // <-- LIMIT FELEMELVE 3-RA!
     let html = '';
     const toShow = sortedStats.slice(0, MAX_ITEMS);
 
@@ -405,8 +405,9 @@ window.loadFlottaStatisztika = async function () {
 // --- ÉRTESÍTÉSEK LOGIKA ---
 window.generateAlertHtml = function (r) {
   const isWarning = r.includes('⚠️');
-  // A 'text-white' sötét módban fehér, a 'light-theme' osztály alatt pedig automatikusan sötét lesz a CSS-ed miatt
-  return `<div class="glass-panel py-3 px-4 reveal active border-l-4 ${isWarning ? 'border-l-amber-500 bg-amber-500/10' : 'border-l-red-500 bg-red-500/10'} flex gap-3 items-start shadow-sm mb-2 shrink-0">
+
+  // Eltávolítva a 'mb-2' dupla margó, és vékonyabb 'py-2.5' padding
+  return `<div class="glass-panel py-2.5 px-4 reveal active border-l-4 ${isWarning ? 'border-l-amber-500 bg-amber-500/10' : 'border-l-red-500 bg-red-500/10'} flex gap-3 items-start shadow-sm shrink-0">
             <span class="text-lg leading-none mt-0.5">${isWarning ? '⚠️' : '🚨'}</span> 
             <span class="text-[13px] font-black leading-snug text-white">${r.replace('⚠️ ', '').replace('🚨 ', '')}</span>
           </div>`;
@@ -426,7 +427,17 @@ window.loadRiasztasok = async function () {
   const container = document.getElementById('alertContainer');
   if (!container) return;
   try {
-    const riasztasok = await API.fetchAlerts(token);
+    let riasztasok = await API.fetchAlerts(token);
+
+    // RENDEZÉS: A kritikus (🚨) értesítések kerülnek a lista elejére
+    riasztasok.sort((a, b) => {
+      const aCrit = a.includes('🚨');
+      const bCrit = b.includes('🚨');
+      if (aCrit && !bCrit) return -1;
+      if (!aCrit && bCrit) return 1;
+      return 0;
+    });
+
     window.currentRiasztasok = riasztasok;
 
     const modalList = document.getElementById('allAlertsList');
@@ -435,7 +446,7 @@ window.loadRiasztasok = async function () {
     }
 
     if (Array.isArray(riasztasok) && riasztasok.length > 0) {
-      const MAX_ITEMS = 3; // Mindig 3 db jelenik meg maximum
+      const MAX_ITEMS = 3;
       let html = '';
       const toShow = riasztasok.slice(0, MAX_ITEMS);
       html += toShow.map(r => generateAlertHtml(r)).join('');
@@ -453,30 +464,32 @@ window.loadRiasztasok = async function () {
 
 // --- ENGEDÉLYEZÉSEK LOGIKA ---
 window.generateRequestHtml = function (f) {
-  const autoTipus = f.auto ? f.auto.tipus : 'Ismeretlen típus';
+  const autoTipus = f.auto ? f.auto.tipus : 'Ismeretlen';
 
-  return `<div class="req-card py-4 px-5 mb-3 shrink-0 rounded-2xl transition-all duration-300">
-            <div class="flex justify-between items-center mb-2">
-              <p class="req-title text-sm font-black flex items-center gap-2">
-                <span class="text-blue-500 text-base drop-shadow-sm">📩</span> 
-                <span class="font-mono tracking-widest text-[15px]">${f.auto_rendszam}</span>
-                <span class="req-sub text-[10px] uppercase font-bold tracking-widest ml-1">${autoTipus}</span>
+  return `<div class="req-card p-3.5 rounded-xl transition-all duration-300 flex flex-col justify-between h-full shadow-sm">
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <p class="req-title text-[13px] font-black flex items-center gap-1.5">
+                  <span class="text-blue-500 text-base drop-shadow-sm">📩</span> 
+                  <span class="font-mono tracking-widest">${f.auto_rendszam}</span>
+                  <span class="req-sub text-[10px] uppercase font-bold tracking-widest ml-1.5">${autoTipus}</span>
+                </p>
+              </div>
+              
+              <p class="text-xs leading-relaxed font-bold mb-3.5">
+                <span class="req-title text-sm block mb-1">${f.sofor_nev}</span>
+                <span class="req-sub">${f.indulas.split(',')[0]} ➔ ${f.erkezes.split(',')[0]}</span> 
+                <span class="text-emerald-500 font-black ml-1">(${f.tavolsag} km)</span>
               </p>
             </div>
             
-            <p class="text-xs leading-relaxed font-bold">
-              <span class="req-title text-sm block mb-1">${f.sofor_nev}</span>
-              <span class="req-sub">${f.indulas.split(',')[0]} ➔ ${f.erkezes.split(',')[0]}</span> 
-              <span class="text-emerald-500 font-black ml-1">(${f.tavolsag} km)</span>
-            </p>
-            
-            <div class="flex gap-3 mt-4">
+            <div class="flex gap-2.5 mt-auto">
                <button onclick="biralUtFizikai(${f.id}, 'JOVAHAGYOTT')" 
-                       class="flex-1 req-btn-approve font-black py-2.5 rounded-xl text-[11px] uppercase tracking-wider transition shadow-sm">
+                       class="flex-1 req-btn-approve font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">
                  ✔ JÓVÁHAGY
                </button>
                <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" 
-                       class="flex-1 req-btn-reject font-black py-2.5 rounded-xl text-[11px] uppercase tracking-wider transition shadow-sm">
+                       class="flex-1 req-btn-reject font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">
                  ✖ ELVET
                </button>
             </div>
@@ -505,19 +518,21 @@ window.loadBeerkezoList = async function () {
     }
 
     if (!Array.isArray(fuvarok) || fuvarok.length === 0) {
-      container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Jelenleg nincs kérelem.</div>`;
+      // Fontos a col-span-full, hogy gridben is középre kerüljön
+      container.innerHTML = `<div class="col-span-full text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Jelenleg nincs kérelem.</div>`;
       initScrollReveal();
       return;
     }
 
-    const MAX_ITEMS = 2; // Mindig 2 db jelenik meg maximum
+    const MAX_ITEMS = 4; // <-- LIMIT FELEMELVE 4-RE!
     let html = '';
     const toShow = fuvarok.slice(0, MAX_ITEMS);
     html += toShow.map(f => generateRequestHtml(f)).join('');
 
     if (fuvarok.length > MAX_ITEMS) {
       const extraCount = fuvarok.length - MAX_ITEMS;
-      html += `<button onclick="openAllRequestsModal()" class="w-full py-2 mt-2 shrink-0 text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">+ További ${extraCount} kérelem mutatása</button>`;
+      // Hozzáadtuk a 'col-span-full' osztályt a gombhoz
+      html += `<button onclick="openAllRequestsModal()" class="col-span-full w-full py-2 shrink-0 text-[10px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">+ További ${extraCount} kérelem mutatása</button>`;
     }
     container.innerHTML = html;
     initScrollReveal();
