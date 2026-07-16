@@ -11,17 +11,19 @@ window.currentRangsor = [];
 
 const socket = (typeof io !== 'undefined') ? io('http://localhost:3000') : null;
 
+// Rendszer Értesítések listája
 window.showNotification = function (msg) {
   const container = document.getElementById('alertContainer');
   if (!container) return;
   const note = document.createElement('div');
-  note.className = "glass-panel border-l-4 border-l-blue-500 p-4 rounded-xl shadow-lg fade-in font-bold flex items-center gap-3 transition-opacity duration-300 mb-3 text-white";
+  note.className = "bg-white/5 border border-white/10 border-l-4 border-l-blue-500 p-4 rounded-xl shadow-sm fade-in font-bold flex items-center gap-3 transition-opacity duration-300 mb-3 text-white";
   note.innerHTML = `<span class="text-2xl">🔔</span> <span>${msg}</span>`;
   container.prepend(note);
   setTimeout(() => { note.style.opacity = '0'; setTimeout(() => note.remove(), 300); }, 5000);
 };
 
 window.showToast = function (uzenet, tipus = 'info') {
+  // (Ide jön a már meglévő showToast kódod, az változatlan marad)
   const container = document.getElementById('toastContainer');
   if (!container) return;
   const toast = document.createElement('div');
@@ -43,22 +45,27 @@ window.showToast = function (uzenet, tipus = 'info') {
   }, 10000);
 };
 
+// OPTIMALIZÁLT: Villám Debouncer (200ms) a túlterhelés ellen
+let frissitesIdozito;
 if (socket) {
   socket.on('adat_frissites', () => {
-    if (window.AppState && window.AppState.user && window.AppState.user.role === 'ADMIN') {
-      if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok();
-      if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
-      if (typeof showToast === 'function') showToast("Új fuvarigény vagy rendszeresemény érkezett!", "figyelmeztetes");
-      if (typeof loadAuditLog === 'function') loadAuditLog();
-      if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
-      if (typeof renderDashboard === 'function') renderDashboard();
-      if (typeof loadFlottaStatisztika === 'function') loadFlottaStatisztika();
-    }
-    if (window.AppState && window.AppState.token) {
-      if (typeof loadAutok === 'function') loadAutok();
-      if (typeof loadUtak === 'function') loadUtak();
-      if (typeof loadKliensElozmenyek === 'function') loadKliensElozmenyek();
-    }
+    clearTimeout(frissitesIdozito);
+    frissitesIdozito = setTimeout(() => {
+      if (window.AppState && window.AppState.user && window.AppState.user.role === 'ADMIN') {
+        if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok();
+        if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
+        if (typeof showToast === 'function') showToast("Adatok szinkronizálva!", "figyelmeztetes");
+        if (typeof loadAuditLog === 'function') loadAuditLog();
+        if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
+        if (typeof renderDashboard === 'function') renderDashboard();
+        if (typeof loadFlottaStatisztika === 'function') loadFlottaStatisztika();
+      }
+      if (window.AppState && window.AppState.token) {
+        if (typeof loadAutok === 'function') loadAutok();
+        if (typeof loadUtak === 'function') loadUtak();
+        if (typeof loadKliensElozmenyek === 'function') loadKliensElozmenyek();
+      }
+    }, 200); // 200ms: Vizuálisan azonnali, de megfogja a hálózati spam-et
   });
 }
 
@@ -391,7 +398,7 @@ function formatDateStr(isoStr) { return isoStr ? isoStr.split('T')[0] : 'Nincs a
 
 window.generateAktivFlottaHtml = function (u) {
   return `
-    <div class="glass-panel p-4 flex flex-col gap-3 hover:bg-white/5 transition-all mb-2 shrink-0">
+    <div class="bg-white/5 border border-white/10 p-4 rounded-[20px] flex flex-col gap-3 hover:bg-white/10 transition-all mb-2 shrink-0">
       <div class="flex justify-between items-start">
         <div class="font-black text-white flex items-center gap-2">🚘 <span class="font-mono text-blue-400 text-sm tracking-widest">${u.auto_rendszam}</span></div>
         <span class="flex items-center gap-1 text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/50 px-2 py-1 rounded-md tracking-widest font-black uppercase">
@@ -458,7 +465,7 @@ window.loadAktivFlotta = async function () {
 
 window.generateRangsorHtml = function (rendszam, data) {
   return `
-    <div class="glass-panel flex flex-col p-3 transition hover:bg-white/5 mb-2 shrink-0">
+    <div class="bg-white/5 border border-white/10 rounded-[16px] flex flex-col p-3 transition hover:bg-white/10 mb-2 shrink-0">
       <div class="flex justify-between items-center mb-1">
         <span class="font-mono font-black text-emerald-400 tracking-widest text-sm">${rendszam}</span>
         <span class="text-[9px] bg-white/10 text-slate-300 px-2 py-1 rounded-md font-bold uppercase">${data.db} fuvar</span>
@@ -518,7 +525,7 @@ window.loadFlottaStatisztika = async function () {
 
 window.generateAlertHtml = function (r) {
   const isWarning = r.includes('⚠️');
-  return `<div class="glass-panel py-2.5 px-4 reveal active border-l-4 ${isWarning ? 'border-l-amber-500 bg-amber-500/10' : 'border-l-red-500 bg-red-500/10'} flex gap-3 items-start shadow-sm shrink-0">
+  return `<div class="bg-white/5 border border-white/10 py-2.5 px-4 rounded-xl reveal active border-l-4 ${isWarning ? 'border-l-amber-500 bg-amber-500/10' : 'border-l-red-500 bg-red-500/10'} flex gap-3 items-start shadow-sm shrink-0">
             <span class="text-lg leading-none mt-0.5">${isWarning ? '⚠️' : '🚨'}</span> 
             <span class="text-[13px] font-black leading-snug text-white">${r.replace('⚠️ ', '').replace('🚨 ', '')}</span>
           </div>`;
@@ -705,8 +712,8 @@ window.loadAutok = async function () {
             <button onclick="deleteAutoAction('${a.rendszam}')" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 text-xs px-4 py-3 rounded-xl font-black flex items-center justify-center transition">🗑️</button>
           </div>`;
 
-        driverHtml += `<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}</div>`;
-        adminHtml += `<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}${adminBtns}</div>`;
+        driverHtml += `<div class="bg-white/5 border border-white/10 rounded-[24px] shadow-sm p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}</div>`;
+        adminHtml += `<div class="bg-white/5 border border-white/10 rounded-[24px] shadow-sm p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}${adminBtns}</div>`;
       });
 
       if (autoListContainer) autoListContainer.innerHTML = driverHtml;
@@ -872,8 +879,9 @@ window.loadUtak = async function () {
   } catch (e) { }
 };
 
-// 3. MEGOLDÁS: Kliens előzményeinek mobilbarát (kártyás) listája a dedikált modálba + Dátum Szűrés + Csengő
-window.loadKliensElozmenyek = async function () {
+// 3. MEGOLDÁS: Kliens előzményeinek mobilbarát (kártyás) listája a dedikált modálba + Dátum Szűrés + Csengő + DOM Optimalizálás
+// Az alapértelmezett showAll = false, így elsőre csak 15 elemet tölt be
+window.loadKliensElozmenyek = async function (showAll = false) {
   const token = window.AppState.token;
   const currentUser = window.AppState.user;
 
@@ -885,7 +893,6 @@ window.loadKliensElozmenyek = async function () {
   const container = document.getElementById('kliensHistoryModalList');
   if (!container) return;
 
-  // Beolvassuk az aktuális szűrési feltételt a mezőből
   const szuroInput = document.getElementById('kliensElozmenyekSzuro');
   const szuroValue = szuroInput ? szuroInput.value.trim() : '';
 
@@ -893,31 +900,31 @@ window.loadKliensElozmenyek = async function () {
     const utak = await API.fetchUtak(token, false, '');
     let unclosedCount = 0;
 
-    // Megszámoljuk a lezáratlan utakat az EREDETI (szűretlen) listából, 
-    // hogy a csengő mindig a valós értéket mutassa.
     utak.forEach(u => {
       if (u.status === 'JOVAHAGYOTT') unclosedCount++;
     });
 
-    // --- Helyi Szűrés Alkalmazása ---
     let megjelenitendoUtak = utak;
     if (szuroValue !== '') {
       megjelenitendoUtak = utak.filter(u => {
-        // Megpróbáljuk kinyerni a dátumot az elérhető mezőkből
         const dateString = String(u.datum || u.honap_ev || u.created_at || '').toLowerCase();
-        // A beírt szöveg egyezik a dátum elejével / részével
         return dateString.includes(szuroValue.toLowerCase());
       });
     }
 
     if (!Array.isArray(megjelenitendoUtak) || megjelenitendoUtak.length === 0) {
       if (szuroValue !== '') {
-        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Nincs a megadott dátumnak megfelelő fuvar.</div>`;
+        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold bg-white/5 border border-dashed border-white/10 rounded-2xl">Nincs a megadott dátumnak megfelelő fuvar.</div>`;
       } else {
-        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Még nincsenek fuvarjaid a rendszerben.</div>`;
+        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold bg-white/5 border border-dashed border-white/10 rounded-2xl">Még nincsenek fuvarjaid a rendszerben.</div>`;
       }
     } else {
-      container.innerHTML = megjelenitendoUtak.map(u => {
+
+      // OPTIMALIZÁLT: Lista limitálása 15 elemre, ha nincs szűrés és nincs kinyitva az összes
+      const MAX_ITEMS = 15;
+      const limitList = (!showAll && szuroValue === '') ? megjelenitendoUtak.slice(0, MAX_ITEMS) : megjelenitendoUtak;
+
+      let html = limitList.map(u => {
         let statuszClass = u.status === 'JOVAHAGYOTT' ? 'text-emerald-400 bg-emerald-500/20 border border-emerald-500/30' :
           (u.status === 'ELUTASITOTT' ? 'text-red-400 bg-red-500/20 border border-red-500/30' :
             (u.status === 'TELJESITVE' ? 'text-blue-400 bg-blue-500/20 border border-blue-500/30' :
@@ -925,11 +932,11 @@ window.loadKliensElozmenyek = async function () {
 
         let gombHTML = '';
         if (u.status === 'JOVAHAGYOTT') {
-          gombHTML = `<button onclick="openLezarModal(${u.id}, '${u.auto_rendszam}')" class="mt-3 w-full bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 border border-blue-500/30 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-lg">⛽ Fuvar Lezárása</button>`;
+          gombHTML = `<button onclick="openLezarModal(${u.id}, '${u.auto_rendszam}')" class="mt-3 w-full bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 border border-blue-500/30 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-sm">⛽ Fuvar Lezárása</button>`;
         }
 
         return `
-        <div class="glass-panel p-5 rounded-2xl flex flex-col gap-3 transition hover:bg-white/5 border border-white/10 mb-3 shadow-md">
+        <div class="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col gap-3 transition hover:bg-white/10 mb-3 shadow-sm shrink-0">
           <div class="flex justify-between items-center">
             <span class="font-mono font-black text-white text-lg tracking-widest">${u.auto_rendszam}</span>
             <span class="text-[10px] px-3 py-1.5 rounded font-black tracking-widest uppercase ${statuszClass}">${u.status}</span>
@@ -941,15 +948,21 @@ window.loadKliensElozmenyek = async function () {
           </div>
           <div class="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
              <span class="text-emerald-400 text-sm font-black bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">${u.tavolsag} km</span>
-             <!-- Frissítve: Ha a backend küld pontos dátumot, azt jelenítjük meg, különben csak a hónapot -->
              <span class="text-slate-400 text-xs font-bold flex items-center gap-1">📅 ${u.datum ? u.datum.split('T')[0] : u.honap_ev}</span>
           </div>
           ${gombHTML}
         </div>`;
       }).join('');
+
+      // Ha vannak még elemek, beteszünk egy gombot, ami a showAll = true paraméterrel hívja meg újra magát
+      if (!showAll && szuroValue === '' && megjelenitendoUtak.length > MAX_ITEMS) {
+        const remaining = megjelenitendoUtak.length - MAX_ITEMS;
+        html += `<button onclick="loadKliensElozmenyek(true)" class="w-full py-4 mt-2 mb-4 shrink-0 text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20 shadow-sm">⬇ További ${remaining} korábbi fuvar betöltése</button>`;
+      }
+
+      container.innerHTML = html;
     }
 
-    // Csengő (értesítő indikátor) bekapcsolása, ha van lezáratlan utad
     const indicator = document.getElementById('unclosedTripIndicator');
     const countSpan = document.getElementById('unclosedTripCount');
     if (unclosedCount > 0) {
