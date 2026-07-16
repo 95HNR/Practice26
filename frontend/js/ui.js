@@ -4,7 +4,6 @@ let debounceTimer = null;
 window.currentFlotta = [];
 let costChartInstance = null;
 
-// Globális változók a modalokhoz
 window.currentRiasztasok = [];
 window.currentBeerkezok = [];
 window.currentAktivFlotta = [];
@@ -22,12 +21,34 @@ window.showNotification = function (msg) {
   setTimeout(() => { note.style.opacity = '0'; setTimeout(() => note.remove(), 300); }, 5000);
 };
 
+window.showToast = function (uzenet, tipus = 'info') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const toast = document.createElement('div');
+  let bgClass = 'bg-blue-500/90 border-blue-400/50';
+  let icon = 'ℹ️';
+
+  if (tipus === 'siker') { bgClass = 'bg-emerald-500/90 border-emerald-400/50'; icon = '✅'; }
+  else if (tipus === 'hiba') { bgClass = 'bg-red-500/90 border-red-400/50'; icon = '❌'; }
+  else if (tipus === 'figyelmeztetes') { bgClass = 'bg-amber-500/90 border-amber-400/50'; icon = '⚠️'; }
+
+  toast.className = `${bgClass} text-white px-5 py-4 rounded-2xl shadow-2xl font-bold text-sm transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto flex items-center gap-3 border backdrop-blur-md`;
+  toast.innerHTML = `<span class="text-lg">${icon}</span> <span>${uzenet}</span>`;
+
+  container.appendChild(toast);
+  setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+  setTimeout(() => {
+    toast.classList.add('opacity-0', 'translate-y-5');
+    setTimeout(() => toast.remove(), 300);
+  }, 10000);
+};
+
 if (socket) {
   socket.on('adat_frissites', () => {
     if (window.AppState && window.AppState.user && window.AppState.user.role === 'ADMIN') {
       if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok();
       if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
-      showNotification("Új fuvarigény vagy rendszeresemény történt!");
+      if (typeof showToast === 'function') showToast("Új fuvarigény vagy rendszeresemény érkezett!", "figyelmeztetes");
       if (typeof loadAuditLog === 'function') loadAuditLog();
       if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
       if (typeof renderDashboard === 'function') renderDashboard();
@@ -36,9 +57,45 @@ if (socket) {
     if (window.AppState && window.AppState.token) {
       if (typeof loadAutok === 'function') loadAutok();
       if (typeof loadUtak === 'function') loadUtak();
+      if (typeof loadKliensElozmenyek === 'function') loadKliensElozmenyek();
     }
   });
 }
+
+// 1. MEGOLDÁS: Admin mobil menü javítva - az összes almenü látható letisztult kategóriákban
+window.toggleMobileMenu = function () {
+  const menu = document.getElementById('mobileMenu');
+  if (menu.classList.contains('hidden')) {
+    menu.classList.remove('hidden');
+    let menuHtml = `<button onclick="toggleMobileMenu()" class="absolute top-6 right-6 text-white p-3 bg-white/10 hover:bg-white/20 rounded-full transition z-50">❌</button>`;
+    menuHtml += `<button onclick="toggleTheme(); toggleMobileMenu()" class="text-white text-lg font-bold bg-white/10 border border-white/20 px-6 py-3 rounded-xl w-[85%] max-w-sm mt-4 shrink-0">🌓 Téma váltás</button>`;
+
+    if (window.AppState?.user?.role === 'ADMIN') {
+      menuHtml += `
+        <div class="w-[85%] max-w-sm flex flex-col gap-2 mt-4 pb-10">
+          <div class="text-emerald-400 font-black text-xs uppercase tracking-widest mb-1">Hozzáadás</div>
+          <button onclick="openModalWithAnim('addAutoModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">🚗 Új Autó</button>
+          <button onclick="openModalWithAnim('addUserModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">👤 Új Személyzet</button>
+
+          <div class="text-amber-400 font-black text-xs uppercase tracking-widest mt-4 mb-1">Módosítás</div>
+          <button onclick="openModalWithAnim('manageFleetModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">🚘 Autók Kezelése</button>
+          <button onclick="openModalWithAnim('manageStaffModal'); loadSzemelyzet(); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">👥 Fiókok Kezelése</button>
+
+          <div class="text-blue-400 font-black text-xs uppercase tracking-widest mt-4 mb-1">Előzmények</div>
+          <button onclick="openModalWithAnim('historyModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">📋 Fuvar Előzmények</button>
+          <button onclick="openModalWithAnim('allSzervizHistoryModal'); loadAllSzervizHistory(); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">🛠️ Szerviztörténet</button>
+          <button onclick="openModalWithAnim('auditModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">📝 Audit Napló</button>
+        </div>`;
+    } else {
+      menuHtml += `<button onclick="openModalWithAnim('kliensHistoryModal'); toggleMobileMenu()" class="text-emerald-400 text-xl font-bold bg-emerald-500/10 border border-emerald-500/20 px-8 py-4 rounded-xl w-[85%] max-w-sm mt-2">📋 Saját Előzményeim</button>`;
+    }
+
+    menuHtml += `<button onclick="if(typeof logout === 'function') logout(); toggleMobileMenu();" class="text-red-400 text-lg font-bold bg-red-500/10 border border-red-500/20 px-8 py-4 rounded-xl w-[85%] max-w-sm mt-auto mb-6 shrink-0">Kijelentkezés</button>`;
+    menu.innerHTML = menuHtml;
+  } else {
+    menu.classList.add('hidden');
+  }
+};
 
 window.initScrollReveal = function () {
   const observer = new IntersectionObserver((entries) => {
@@ -109,6 +166,16 @@ window.openModalWithAnim = function (modalId) {
   modal.classList.remove('hidden');
   const card = modal.querySelector('.glass-panel');
   if (card) card.classList.add('fade-in');
+};
+
+// --- EZT AZ ÚJ FÜGGVÉNYT ADD HOZZÁ ---
+window.toggleModalWithAnim = function (modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal.classList.contains('hidden')) {
+    openModalWithAnim(modalId);
+  } else {
+    closeModal(modalId);
+  }
 };
 
 window.openEditModal = function (rendszam) {
@@ -182,24 +249,21 @@ window.submitLezarUt = async function (event) {
       return;
     }
 
-    showNotification('Fuvar lezárva, kilométeróra frissítve!');
+    if (typeof showToast === 'function') showToast('Fuvar lezárva, gépjármű újra elérhető!', 'siker');
     closeModal('lezarModal');
 
-    // 1. Azonnali vizuális frissítés (class alapján, hogy a modalban lévő kártya is változzon!)
     const titleText = document.getElementById('lezarModalTitle').innerText;
     const rendszamMatch = titleText.match(/\(([^)]+)\)/);
-
     if (rendszamMatch && rendszamMatch[1]) {
       const rendszam = rendszamMatch[1];
-      // A querySelectorAll az összes előfordulást frissíti a HTML-ben
       document.querySelectorAll(`.km-badge-${rendszam}`).forEach(badge => {
         badge.innerHTML = `🛣️ ${parseInt(aktualisKm)} km`;
       });
     }
 
-    // 2. Szinkronizálás a szerverrel
     if (typeof loadUtak === 'function') loadUtak();
     if (typeof loadAutok === 'function') loadAutok();
+    if (typeof loadKliensElozmenyek === 'function') loadKliensElozmenyek();
 
   } catch (e) {
     alert('Hálózati hiba történt a lezárás során.');
@@ -238,9 +302,8 @@ window.renderUI = async function () {
     if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.remove('hidden');
     if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.remove('hidden');
 
-    document.getElementById('kliensHeader').classList.add('hidden');
-    document.getElementById('soforUrlapContainer').classList.add('hidden');
-    if (document.getElementById('kliensListaContainer')) document.getElementById('kliensListaContainer').classList.add('hidden');
+    // Kliens gomb elrejtése adminnak
+    if (document.getElementById('userHistoryBtn')) document.getElementById('userHistoryBtn').classList.add('hidden');
 
     if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok();
     if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
@@ -256,9 +319,8 @@ window.renderUI = async function () {
     if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.add('hidden');
     if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.add('hidden');
 
-    document.getElementById('kliensHeader').classList.remove('hidden');
-    document.getElementById('soforUrlapContainer').classList.remove('hidden');
-    if (document.getElementById('kliensListaContainer')) document.getElementById('kliensListaContainer').classList.remove('hidden');
+    // 2. MEGOLDÁS: Saját Előzményeim gomb megjelenítése a USER számára
+    if (document.getElementById('userHistoryBtn')) document.getElementById('userHistoryBtn').classList.remove('hidden');
   }
 
   document.getElementById('kliensSection').classList.remove('hidden');
@@ -269,6 +331,7 @@ window.renderUI = async function () {
 
   if (typeof loadAutok === 'function') loadAutok();
   if (typeof loadUtak === 'function') loadUtak();
+  if (typeof loadKliensElozmenyek === 'function') loadKliensElozmenyek();
 };
 
 window.resetDistanceField = function (resetStart = true, resetEnd = true) {
@@ -326,7 +389,6 @@ window.selectLocation = async function (inputId, dropdownId, locationName, lat, 
 
 function formatDateStr(isoStr) { return isoStr ? isoStr.split('T')[0] : 'Nincs adat'; }
 
-// --- ÉLŐ FLOTTAKÖVETÉS LOGIKA ---
 window.generateAktivFlottaHtml = function (u) {
   return `
     <div class="glass-panel p-4 flex flex-col gap-3 hover:bg-white/5 transition-all mb-2 shrink-0">
@@ -367,7 +429,6 @@ window.loadAktivFlotta = async function () {
     }
 
     if (!Array.isArray(aktivUtak) || aktivUtak.length === 0) {
-      // Új, erősebb stílus: szaggatott keret és kontrasztosabb szöveg
       container.innerHTML = `
         <div class="h-full flex items-center justify-center border border-dashed border-slate-500/40 rounded-[20px] p-4">
           <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Nincs autó úton</span>
@@ -376,7 +437,7 @@ window.loadAktivFlotta = async function () {
       return;
     }
 
-    const MAX_ITEMS = 2; // Max 2 db a főoldalon
+    const MAX_ITEMS = 2;
     let html = '';
     const toShow = aktivUtak.slice(0, MAX_ITEMS);
 
@@ -395,7 +456,6 @@ window.loadAktivFlotta = async function () {
   } catch (e) { }
 };
 
-// --- FLOTTA RANGSOR LOGIKA ---
 window.generateRangsorHtml = function (rendszam, data) {
   return `
     <div class="glass-panel flex flex-col p-3 transition hover:bg-white/5 mb-2 shrink-0">
@@ -418,14 +478,6 @@ window.openAllRangsorModal = function () {
   openModalWithAnim('allRangsorModal');
 };
 
-window.openAllRangsorModal = function () {
-  const modalList = document.getElementById('allRangsorList');
-  if (modalList) {
-    modalList.innerHTML = window.currentRangsor.map(([rendszam, data]) => window.generateRangsorHtml(rendszam, data)).join('');
-  }
-  openModalWithAnim('allRangsorModal');
-};
-
 window.loadFlottaStatisztika = async function () {
   const container = document.getElementById('flottaRangsor');
   if (!container) return;
@@ -435,7 +487,6 @@ window.loadFlottaStatisztika = async function () {
     const sortedStats = Object.entries(stats).sort((a, b) => b[1].km - a[1].km);
     window.currentRangsor = sortedStats;
 
-    // Ha a modal nyitva van, azt is frissítjük
     const modalList = document.getElementById('allRangsorList');
     if (modalList && !document.getElementById('allRangsorModal').classList.contains('hidden')) {
       modalList.innerHTML = sortedStats.map(([rendszam, data]) => window.generateRangsorHtml(rendszam, data)).join('');
@@ -456,7 +507,6 @@ window.loadFlottaStatisztika = async function () {
         <span class="font-bold text-white">${data.km.toFixed(0)} km</span>
       </div>`).join('');
 
-    // --- ITT AZ ÚJ GOMB ---
     if (sortedStats.length > MAX_ITEMS) {
       const extraCount = sortedStats.length - MAX_ITEMS;
       html += `<button onclick="openAllRangsorModal()" class="w-full py-2 mt-1 shrink-0 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition border border-emerald-500/20">+ További ${extraCount} autó</button>`;
@@ -466,11 +516,8 @@ window.loadFlottaStatisztika = async function () {
   } catch (e) { console.error(e); }
 };
 
-// --- ÉRTESÍTÉSEK LOGIKA ---
 window.generateAlertHtml = function (r) {
   const isWarning = r.includes('⚠️');
-
-  // Eltávolítva a 'mb-2' dupla margó, és vékonyabb 'py-2.5' padding
   return `<div class="glass-panel py-2.5 px-4 reveal active border-l-4 ${isWarning ? 'border-l-amber-500 bg-amber-500/10' : 'border-l-red-500 bg-red-500/10'} flex gap-3 items-start shadow-sm shrink-0">
             <span class="text-lg leading-none mt-0.5">${isWarning ? '⚠️' : '🚨'}</span> 
             <span class="text-[13px] font-black leading-snug text-white">${r.replace('⚠️ ', '').replace('🚨 ', '')}</span>
@@ -493,7 +540,6 @@ window.loadRiasztasok = async function () {
   try {
     let riasztasok = await API.fetchAlerts(token);
 
-    // RENDEZÉS: A kritikus (🚨) értesítések kerülnek a lista elejére
     riasztasok.sort((a, b) => {
       const aCrit = a.includes('🚨');
       const bCrit = b.includes('🚨');
@@ -526,10 +572,8 @@ window.loadRiasztasok = async function () {
   } catch (e) { console.error(e); }
 };
 
-// --- ENGEDÉLYEZÉSEK LOGIKA ---
 window.generateRequestHtml = function (f) {
   const autoTipus = f.auto ? f.auto.tipus : 'Ismeretlen';
-
   return `<div class="req-card p-3.5 rounded-xl transition-all duration-300 flex flex-col justify-between h-full shadow-sm">
             <div>
               <div class="flex justify-between items-center mb-2">
@@ -582,20 +626,18 @@ window.loadBeerkezoList = async function () {
     }
 
     if (!Array.isArray(fuvarok) || fuvarok.length === 0) {
-      // Fontos a col-span-full, hogy gridben is középre kerüljön
       container.innerHTML = `<div class="col-span-full text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Jelenleg nincs kérelem.</div>`;
       initScrollReveal();
       return;
     }
 
-    const MAX_ITEMS = 4; // <-- LIMIT FELEMELVE 4-RE!
+    const MAX_ITEMS = 4;
     let html = '';
     const toShow = fuvarok.slice(0, MAX_ITEMS);
     html += toShow.map(f => generateRequestHtml(f)).join('');
 
     if (fuvarok.length > MAX_ITEMS) {
       const extraCount = fuvarok.length - MAX_ITEMS;
-      // Hozzáadtuk a 'col-span-full' osztályt a gombhoz
       html += `<button onclick="openAllRequestsModal()" class="col-span-full w-full py-2 shrink-0 text-[10px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">+ További ${extraCount} kérelem mutatása</button>`;
     }
     container.innerHTML = html;
@@ -633,7 +675,6 @@ window.loadAutok = async function () {
       let adminHtml = '';
 
       autok.forEach((a, index) => {
-        // --- 1. KÖZÖS FEJLÉC (ÚJ, KÉP ALAPJÁN KÉSZÜLT DIZÁJN - NAGYOBB DÁTUMOKKAL) ---
         const commonHeader = `
           <div class="flex justify-between items-center mb-5">
             <div class="flex items-center gap-3">
@@ -646,20 +687,17 @@ window.loadAutok = async function () {
             </span>
           </div>
           
-          <!-- Dátumok sötétített, közös blokkban (NÖVELT BETŰMÉRETTEL) -->
           <div class="grid grid-cols-3 gap-2 bg-slate-900/50 border border-white/5 p-4 rounded-xl text-center mb-5">
             <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">ITP</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.itp)}</span></div>
             <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">RCA</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.rca)}</span></div>
             <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">Utadó</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.rovinieta)}</span></div>
           </div>
           
-          <!-- Széles kilométer jelvény alul -->
           <div class="mt-auto w-full bg-slate-900/60 border border-white/5 rounded-full py-3 px-4 flex justify-center items-center gap-3 shadow-inner">
             <span class="text-xl drop-shadow-md">🚗</span>
             <span class="km-badge-${a.rendszam} font-mono font-black text-slate-200 text-xl tracking-widest drop-shadow-sm">${a.aktualis_km || 0} <span class="text-slate-500 text-sm ml-1">km</span></span>
           </div>`;
 
-        // --- 2. ADMIN GOMBOK ---
         const adminBtns = `
           <div class="flex gap-2 pt-4 border-t border-white/10 mt-4">
             <button onclick="openSzervizModal('${a.rendszam}')" class="bg-white/5 hover:bg-white/10 border border-white/10 flex-1 text-white text-xs py-3 rounded-xl font-black flex items-center justify-center gap-1 transition">🛠️ Szerviz</button>
@@ -667,10 +705,7 @@ window.loadAutok = async function () {
             <button onclick="deleteAutoAction('${a.rendszam}')" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 text-xs px-4 py-3 rounded-xl font-black flex items-center justify-center transition">🗑️</button>
           </div>`;
 
-        // --- 3. KÁRTYÁK ÖSSZEÁLLÍTÁSA (Megkerüljük a scroll animációs bugot saját osztályokkal) ---
-        // Lecseréltem a "glass-panel"-t egyedi Tailwind osztályokra, így a ScrollReveal nem rejti el őket véletlenül!
         driverHtml += `<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}</div>`;
-
         adminHtml += `<div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1 hover:bg-white/10 h-full fade-in" style="animation-delay: ${index * 50}ms">${commonHeader}${adminBtns}</div>`;
       });
 
@@ -678,7 +713,6 @@ window.loadAutok = async function () {
       if (adminAutoListContainer) adminAutoListContainer.innerHTML = adminHtml;
     }
 
-    // Csak a formokat és egyéb elemeket animáljuk, a kártyákat békén hagyjuk!
     initScrollReveal();
 
     const rendszamSelect = document.getElementById('utRendszam');
@@ -783,7 +817,6 @@ window.deleteUserAction = async function (id, username) {
 
 window.loadUtak = async function () {
   const token = window.AppState.token; const currentUser = window.AppState.user; if (!token || !currentUser) return;
-
   const szuro = document.getElementById('adminKerelmekSzuro')?.value || '';
 
   try {
@@ -802,8 +835,6 @@ window.loadUtak = async function () {
               <button onclick="biralUtFizikai(${u.id}, 'JOVAHAGYOTT')" class="glass-btn bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">✔ Jóváhagy</button>
               <button onclick="biralUtFizikai(${u.id}, 'ELUTASITOTT')" class="glass-btn bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">✖ Elvet</button>
             </div>`;
-        } else if (currentUser.role === 'USER' && u.status === 'JOVAHAGYOTT') {
-          gombHTML = `<button onclick="openLezarModal(${u.id}, '${u.auto_rendszam}')" class="glass-btn bg-blue-500/20 text-blue-400 hover:bg-blue-500/40 px-4 py-2 rounded-lg text-xs font-bold w-full flex justify-center items-center gap-2">⛽ LEZÁRÁS</button>`;
         }
 
         let statusStyle = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
@@ -839,6 +870,98 @@ window.loadUtak = async function () {
 
     if (document.getElementById('adminUtList')) document.getElementById('adminUtList').innerHTML = htmlContent;
   } catch (e) { }
+};
+
+// 3. MEGOLDÁS: Kliens előzményeinek mobilbarát (kártyás) listája a dedikált modálba + Dátum Szűrés + Csengő
+window.loadKliensElozmenyek = async function () {
+  const token = window.AppState.token;
+  const currentUser = window.AppState.user;
+
+  if (!token || currentUser.role === 'ADMIN') {
+    document.getElementById('unclosedTripIndicator')?.classList.add('hidden');
+    return;
+  }
+
+  const container = document.getElementById('kliensHistoryModalList');
+  if (!container) return;
+
+  // Beolvassuk az aktuális szűrési feltételt a mezőből
+  const szuroInput = document.getElementById('kliensElozmenyekSzuro');
+  const szuroValue = szuroInput ? szuroInput.value.trim() : '';
+
+  try {
+    const utak = await API.fetchUtak(token, false, '');
+    let unclosedCount = 0;
+
+    // Megszámoljuk a lezáratlan utakat az EREDETI (szűretlen) listából, 
+    // hogy a csengő mindig a valós értéket mutassa.
+    utak.forEach(u => {
+      if (u.status === 'JOVAHAGYOTT') unclosedCount++;
+    });
+
+    // --- Helyi Szűrés Alkalmazása ---
+    let megjelenitendoUtak = utak;
+    if (szuroValue !== '') {
+      megjelenitendoUtak = utak.filter(u => {
+        // Megpróbáljuk kinyerni a dátumot az elérhető mezőkből
+        const dateString = String(u.datum || u.honap_ev || u.created_at || '').toLowerCase();
+        // A beírt szöveg egyezik a dátum elejével / részével
+        return dateString.includes(szuroValue.toLowerCase());
+      });
+    }
+
+    if (!Array.isArray(megjelenitendoUtak) || megjelenitendoUtak.length === 0) {
+      if (szuroValue !== '') {
+        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Nincs a megadott dátumnak megfelelő fuvar.</div>`;
+      } else {
+        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Még nincsenek fuvarjaid a rendszerben.</div>`;
+      }
+    } else {
+      container.innerHTML = megjelenitendoUtak.map(u => {
+        let statuszClass = u.status === 'JOVAHAGYOTT' ? 'text-emerald-400 bg-emerald-500/20 border border-emerald-500/30' :
+          (u.status === 'ELUTASITOTT' ? 'text-red-400 bg-red-500/20 border border-red-500/30' :
+            (u.status === 'TELJESITVE' ? 'text-blue-400 bg-blue-500/20 border border-blue-500/30' :
+              'text-amber-400 bg-amber-500/20 border border-amber-500/30'));
+
+        let gombHTML = '';
+        if (u.status === 'JOVAHAGYOTT') {
+          gombHTML = `<button onclick="openLezarModal(${u.id}, '${u.auto_rendszam}')" class="mt-3 w-full bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 border border-blue-500/30 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-lg">⛽ Fuvar Lezárása</button>`;
+        }
+
+        return `
+        <div class="glass-panel p-5 rounded-2xl flex flex-col gap-3 transition hover:bg-white/5 border border-white/10 mb-3 shadow-md">
+          <div class="flex justify-between items-center">
+            <span class="font-mono font-black text-white text-lg tracking-widest">${u.auto_rendszam}</span>
+            <span class="text-[10px] px-3 py-1.5 rounded font-black tracking-widest uppercase ${statuszClass}">${u.status}</span>
+          </div>
+          <div class="text-sm text-slate-300 font-bold flex flex-col gap-2 mt-2 bg-slate-900/40 p-3 rounded-xl border border-white/5">
+            <span class="truncate flex items-center gap-2"><span class="text-lg leading-none">📍</span> ${u.indulas.split(',')[0]}</span>
+            <span class="text-blue-400 ml-1 text-xs">⬇</span>
+            <span class="truncate flex items-center gap-2"><span class="text-lg leading-none">🏁</span> ${u.erkezes.split(',')[0]}</span>
+          </div>
+          <div class="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
+             <span class="text-emerald-400 text-sm font-black bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/20">${u.tavolsag} km</span>
+             <!-- Frissítve: Ha a backend küld pontos dátumot, azt jelenítjük meg, különben csak a hónapot -->
+             <span class="text-slate-400 text-xs font-bold flex items-center gap-1">📅 ${u.datum ? u.datum.split('T')[0] : u.honap_ev}</span>
+          </div>
+          ${gombHTML}
+        </div>`;
+      }).join('');
+    }
+
+    // Csengő (értesítő indikátor) bekapcsolása, ha van lezáratlan utad
+    const indicator = document.getElementById('unclosedTripIndicator');
+    const countSpan = document.getElementById('unclosedTripCount');
+    if (unclosedCount > 0) {
+      indicator?.classList.remove('hidden');
+      if (countSpan) countSpan.innerText = unclosedCount;
+    } else {
+      indicator?.classList.add('hidden');
+    }
+
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 window.downloadAdvancedJelentes = function (event) {
@@ -907,7 +1030,7 @@ window.addAuto = async function (event) {
       return;
     }
 
-    alert("✅ Autó sikeresen hozzáadva a flottához!");
+    if (typeof showToast === 'function') showToast("Autó sikeresen hozzáadva a flottához!", "siker");
     event.target.reset();
     closeModal('addAutoModal');
     if (typeof loadAutok === 'function') loadAutok();
@@ -975,7 +1098,6 @@ window.loadAuditLog = async function () {
   } catch (e) { console.error(e); }
 };
 
-// --- TELJES FLOTTA SZERVIZTÖRTÉNET ---
 window.loadAllSzervizHistory = async function () {
   const token = window.AppState.token;
   if (!token || window.AppState.user.role !== 'ADMIN') return;
@@ -984,7 +1106,6 @@ window.loadAllSzervizHistory = async function () {
   if (!container) return;
 
   try {
-    // Feltételezzük, hogy létezik egy globális szerviz lekérő végpont
     const res = await fetch('http://localhost:3000/api/admin/szerviz', {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -1007,7 +1128,7 @@ window.loadAllSzervizHistory = async function () {
 
   } catch (e) {
     console.error(e);
-    container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-red-400 font-bold">Hiba történt. Készíteni kell egy globális GET /api/admin/szerviz végpontot a backendben!</td></tr>';
+    container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-red-400 font-bold">Hiba történt a szerviztörténet betöltésekor.</td></tr>';
   }
 };
 
