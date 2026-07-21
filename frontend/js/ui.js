@@ -189,6 +189,9 @@ window.toggleTheme = function () {
   const isLight = body.classList.contains('light-theme');
   localStorage.setItem('drivecheck_theme', isLight ? 'light' : 'dark');
 
+  // 1. ÚJ SOR: Globálisan kényszerítjük a böngészőt a natív elemek (pl. select) sötétítésére!
+  document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
+
   if (typeof costChartInstance !== 'undefined' && costChartInstance) {
     const textColor = isLight ? '#475569' : '#94a3b8';
     const gridColor = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.1)';
@@ -211,6 +214,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof initLanguageSwitcher === 'function') {
     initLanguageSwitcher();
   }
+
+  // 2. ÚJ SOR: Alapértelmezett sötét mód beállítása betöltéskor a böngésző UI elemeinek
+  const isLight = localStorage.getItem('drivecheck_theme') === 'light' || document.body.classList.contains('light-theme');
+  document.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
 });
 
 window.toggleDropdown = function (dropdownId, event) {
