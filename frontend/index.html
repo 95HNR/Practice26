@@ -1135,13 +1135,16 @@
     <button onclick="toggleUnclosedDropdown(event)"
       class="flex flex-col items-center justify-center hover:scale-110 transition-transform cursor-pointer outline-none">
       <div id="bellAnimation" class="relative">
+        <!-- Sárga kör háttér (maradt a hibátlan 65px) -->
         <div
-          class="bg-amber-500 text-white w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.6)]">
-          <span class="text-3xl sm:text-4xl drop-shadow-md">🔔</span>
+          class="bg-amber-500 text-white rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.8)]"
+          style="width: 65px; height: 65px;">
+          <span class="text-3xl drop-shadow-md leading-none flex items-center justify-center">🔔</span>
         </div>
-        <!-- Piros szám (Csak akkor látszik, ha van értesítés) -->
+        <!-- Piros értesítési szám: visszatolva a helyére és 30%-kal megnövelve (30px) -->
         <span id="unclosedTripCount"
-          class="hidden absolute -top-2 -right-2 bg-red-600 text-white text-[14px] font-black w-8 h-8 items-center justify-center rounded-full border-[3px] border-[#0f172a] shadow-xl">0</span>
+          class="hidden absolute -top-2 -right-2 bg-red-600 text-white font-black flex items-center justify-center rounded-full border-[2px] border-[#0f172a] shadow-xl"
+          style="width: 30px; height: 30px; font-size: 14px;">0</span>
       </div>
     </button>
   </div>
