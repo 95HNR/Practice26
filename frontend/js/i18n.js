@@ -1,5 +1,3 @@
-// js/i18n.js
-
 export const translations = {
     hu: {
         "page_title": "DriveCheck V2 | Flottakezelő",
@@ -67,6 +65,13 @@ export const translations = {
         "add_to_fleet": "Hozzáadás a Flottához",
         "status_available": "ELÉRHETŐ",
         "status_unavailable": "NEM ELÉRHETŐ",
+
+        // HIÁNYZÓ STÁTUSZ KULCSOK PÓTOLVA
+        "status_pending": "BEÉRKEZŐ",
+        "status_approved": "JÓVÁHAGYOTT",
+        "status_rejected": "ELUTASÍTOTT",
+        "status_completed": "TELJESÍTVE",
+
         "add_staff_title": "Személyzet Hozzáadása",
         "new_username": "Új Felhasználónév",
         "new_password": "Jelszó",
@@ -84,6 +89,7 @@ export const translations = {
         "th_km": "KILOMÉTER",
         "th_desc": "LEÍRÁS",
         "requests_history": "Kérelmek és Előzmények",
+        "unclosed_trips_title": "Lezárásra váró fuvarok",
         "th_driver": "SOFŐR",
         "th_vehicle": "JÁRMŰ",
         "th_route_details": "ÚTVONAL RÉSZLETEK",
@@ -171,8 +177,6 @@ export const translations = {
         "audit_new_trip": "Új fuvarigény:",
         "audit_trip_word": "Fuvar",
         "audit_status_word": "állapota:",
-        "status_approved": "JOVAHAGYOTT",
-        "status_rejected": "ELUTASITOTT",
         "audit_closed_km": "lezárva. Új km óra:",
         "alert_critical": "KRITIKUS: A(z)",
         "alert_disabled": "letiltva! Lejárt:"
@@ -243,6 +247,12 @@ export const translations = {
         "add_to_fleet": "Add to Fleet",
         "status_available": "AVAILABLE",
         "status_unavailable": "UNAVAILABLE",
+
+        "status_pending": "PENDING",
+        "status_approved": "APPROVED",
+        "status_rejected": "REJECTED",
+        "status_completed": "COMPLETED",
+
         "add_staff_title": "Add Staff",
         "new_username": "New Username",
         "new_password": "Password",
@@ -260,6 +270,7 @@ export const translations = {
         "th_km": "KILOMETERS",
         "th_desc": "DESCRIPTION",
         "requests_history": "Requests and History",
+        "unclosed_trips_title": "Trips to be closed",
         "th_driver": "DRIVER",
         "th_vehicle": "VEHICLE",
         "th_route_details": "ROUTE DETAILS",
@@ -347,8 +358,6 @@ export const translations = {
         "audit_new_trip": "New trip request:",
         "audit_trip_word": "Trip",
         "audit_status_word": "status:",
-        "status_approved": "APPROVED",
-        "status_rejected": "REJECTED",
         "audit_closed_km": "closed. New odometer:",
         "alert_critical": "CRITICAL: Vehicle",
         "alert_disabled": "disabled! Expired:"
@@ -419,6 +428,12 @@ export const translations = {
         "add_to_fleet": "Adaugă la Flotă",
         "status_available": "DISPONIBIL",
         "status_unavailable": "INDISPONIBIL",
+
+        "status_pending": "ÎN AȘTEPTARE",
+        "status_approved": "APROBAT",
+        "status_rejected": "RESPINS",
+        "status_completed": "FINALIZAT",
+
         "add_staff_title": "Adăugare Personal",
         "new_username": "Nume Utilizator Nou",
         "new_password": "Parolă",
@@ -436,6 +451,7 @@ export const translations = {
         "th_km": "KILOMETRI",
         "th_desc": "DESCRIERE",
         "requests_history": "Cereri și Istoric",
+        "unclosed_trips_title": "Curse de închis",
         "th_driver": "ȘOFER",
         "th_vehicle": "VEHICUL",
         "th_route_details": "DETALII RUTĂ",
@@ -478,8 +494,6 @@ export const translations = {
         "more_alerts": "+ Afișează încă {x} alerte",
         "fleet_empty": "Flota este goală",
         "no_registered_cars": "Nicio mașină înregistrată în sistem.",
-        "status_available": "DISPONIBIL",
-        "status_unavailable": "INDISPONIBIL",
         "service": "Service",
         "modify": "Modificare",
         "delete": "Ștergere",
@@ -525,8 +539,6 @@ export const translations = {
         "audit_new_trip": "Cerere nouă cursă:",
         "audit_trip_word": "Cursa",
         "audit_status_word": "stare:",
-        "status_approved": "APROBAT",
-        "status_rejected": "RESPINS",
         "audit_closed_km": "închisă. Kilometraj nou:",
         "alert_critical": "CRITIC: Vehiculul",
         "alert_disabled": "blocat! Expirat:"
@@ -540,7 +552,6 @@ export function t(key) {
     return translations[currentLang][key] || translations['hu'][key] || key;
 }
 
-// BIZTONSÁGOS DINAMIKUS FORDÍTÓ A BACKEND ÜZENETEKHEZ
 export function translateDynamic(text) {
     if (!text) return text;
     let tr = String(text);
@@ -601,10 +612,7 @@ export function initLanguageSwitcher() {
         langSelect.addEventListener('change', function (e) {
             currentLang = e.target.value;
             localStorage.setItem('drivecheck_lang', currentLang);
-
             applyTranslations();
-
-            // Ez frissíti a kártyákat csendben, kijelentkezés nélkül
             if (typeof window.reRenderDynamicLanguage === 'function') {
                 window.reRenderDynamicLanguage();
             }

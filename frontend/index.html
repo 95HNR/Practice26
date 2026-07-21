@@ -41,11 +41,9 @@
       --blob-2: #d8b4fe;
     }
 
-    /* GLOBÁLIS GÖRGETÉS - Itt nincs többé overflow: hidden trükközés! */
     body {
       background: radial-gradient(circle at 50% -20%, var(--bg-grad-start), var(--bg-grad-end));
       background-attachment: fixed;
-      /* A háttér fix marad görgetéskor is */
       color: var(--text-main);
       font-family: 'Inter', sans-serif;
       min-height: 100vh;
@@ -333,7 +331,7 @@
     }
 
     /* =========================================
-       NYELVVÁLASZTÓ GOMB STABILIZÁLÁSA (BAL ALSÓ SAROK)
+       NYELVVÁLASZTÓ GOMB STABILIZÁLÁSA
        ========================================= */
     .lang-floating-btn {
       position: fixed !important;
@@ -383,11 +381,15 @@
       .lang-select-native {
         font-size: 0.85rem !important;
       }
+    }
 
-      #unclosedTripIndicator {
-        bottom: 1.5rem !important;
-        right: 1rem !important;
-        padding: 0.75rem !important;
+    /* KIZÁRÓLAG FEKVŐ (LANDSCAPE) NÉZETBEN LEGYEN RÖGZÍTVE A KÁRTYA */
+    @media (orientation: landscape) {
+      .landscape-sticky {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 6rem !important;
+        height: max-content;
       }
     }
 
@@ -426,6 +428,11 @@
         font-size: 0.833333vw;
       }
     }
+
+    /* CSENGŐ ALAPÉRTELMEZETT REJTÉSE */
+    #fuvarJelzoIkon {
+      display: none !important;
+    }
   </style>
 </head>
 
@@ -436,7 +443,6 @@
     <div class="liquid-blob blob-2 bottom-[-10%] right-[-10%]"></div>
   </div>
 
-  <!-- Fejléc (Sticky odafent marad görgetéskor is) -->
   <header id="mainHeader"
     class="theme-card !border-x-0 !border-t-0 border-b theme-border px-4 sm:px-6 py-4 flex justify-between items-center sticky top-0 z-40 rounded-none shadow-sm w-full h-20">
     <div class="flex items-center gap-2 sm:gap-3">
@@ -516,7 +522,6 @@
       </div>
     </div>
 
-    <!-- Hamburger Gomb (Mobilra) -->
     <button onclick="toggleMobileMenu()"
       class="md:hidden text-blue-400 p-2 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition">
       <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -529,7 +534,6 @@
     class="hidden fixed inset-0 bg-slate-900/95 z-[9999] flex flex-col items-center justify-start pt-16 pb-12 gap-4 backdrop-blur-3xl transition-opacity overflow-y-auto custom-scrollbar">
   </div>
 
-  <!-- TERMÉSZETES GÖRGETÉS KONTÉNER - Itt már a teljes lap görög! -->
   <main class="w-full px-4 sm:px-6 lg:px-8 mx-auto relative pt-4 pb-32">
 
     <div id="loginSection" class="max-w-md mx-auto mt-16 sm:mt-24 theme-card p-6 sm:p-10 rounded-3xl fade-in w-full">
@@ -555,7 +559,6 @@
     <div id="adminSection" class="hidden w-full h-auto">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch w-full">
 
-        <!-- BAL OLDAL -->
         <div class="lg:col-span-3 xl:col-span-2 flex flex-col gap-5">
           <div
             class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full relative">
@@ -599,7 +602,6 @@
           </div>
         </div>
 
-        <!-- KÖZÉPSŐ OSZLOP -->
         <div class="lg:col-span-4 xl:col-span-5 flex flex-col gap-5">
           <div
             class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full relative">
@@ -616,7 +618,6 @@
           </div>
         </div>
 
-        <!-- JOBB OLDAL (GRAFIKON) -->
         <div class="lg:col-span-5 xl:col-span-5 flex flex-col h-full">
           <div
             class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 sm:p-8 rounded-[24px] shadow-lg w-full flex flex-col h-full min-h-[400px] lg:min-h-[35rem]">
@@ -636,50 +637,58 @@
     <div id="kliensSection" class="hidden w-full h-auto">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
 
-        <!-- Az űrlap asztali nézetben lebeg (sticky) hogy mindig lásd, amíg a kocsikat görgeted lefelé -->
-        <div class="lg:col-span-4 xl:col-span-3 flex flex-col h-fit lg:sticky lg:top-[100px] z-30">
-          <div id="soforUrlapContainer"
-            class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 sm:p-8 w-full flex flex-col transition-all">
-            <h4 class="font-black mb-6 sm:mb-8 text-xl flex items-center gap-3 text-white"><span>✍️</span> <span
-                data-i18n="new_request">Új kérés</span></h4>
-            <form onsubmit="addUt(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
-              <div class="relative z-50 md:col-span-2 lg:col-span-1">
-                <select id="utRendszam" required
-                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-bold text-sm sm:text-base outline-none focus:border-emerald-500/50 transition appearance-none cursor-pointer">
-                  <option value="" data-i18n="select_car_default">-- Válassz a szabad autók közül --</option>
-                </select>
-              </div>
-              <div class="relative z-40 md:col-span-2 lg:col-span-1">
-                <input type="date" id="utDatum" required onchange="loadAutok()"
-                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-mono text-sm sm:text-base outline-none focus:border-emerald-500/50 transition [color-scheme:dark] cursor-pointer">
-              </div>
-              <div class="relative z-30">
-                <input type="text" id="utIndulas" data-i18n="departure_placeholder" placeholder="Indulási hely" required
-                  autocomplete="off" oninput="searchOSM(this, 'indulasList')"
-                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-sm sm:text-base outline-none focus:border-emerald-500/50 transition">
-                <div id="indulasList"
-                  class="absolute left-0 right-0 top-full mt-2 dropdown-bg rounded-[20px] shadow-2xl hidden max-h-48 overflow-y-auto border theme-border custom-scrollbar">
+        <!-- ÚJ KÉRÉS KÁRTYA (Fekvő módban rögzítve) -->
+        <div class="lg:col-span-4 xl:col-span-3 relative h-full">
+          <div class="landscape-sticky w-full flex flex-col z-30">
+            <div id="soforUrlapContainer"
+              class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 sm:p-8 w-full flex flex-col transition-all">
+              <h4 class="font-black mb-6 sm:mb-8 text-xl flex items-center gap-3 text-white"><span>✍️</span> <span
+                  data-i18n="new_request">Új kérés</span></h4>
+              <form onsubmit="addUt(event)" class="flex flex-col gap-5 w-full">
+
+                <div class="relative w-full">
+                  <select id="utRendszam" required
+                    class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-bold text-sm sm:text-base outline-none focus:border-emerald-500/50 transition appearance-none cursor-pointer">
+                    <option value="" data-i18n="select_car_default">-- Válassz a szabad autók közül --</option>
+                  </select>
                 </div>
-              </div>
-              <div class="relative z-20">
-                <input type="text" id="utErkezes" data-i18n="arrival_placeholder" placeholder="Érkezési hely" required
-                  autocomplete="off" oninput="searchOSM(this, 'erkezesList')"
-                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-sm sm:text-base outline-none focus:border-emerald-500/50 transition">
-                <div id="erkezesList"
-                  class="absolute left-0 right-0 top-full mt-2 dropdown-bg rounded-[20px] shadow-2xl hidden max-h-48 overflow-y-auto border theme-border custom-scrollbar">
+
+                <div class="relative w-full">
+                  <input type="date" id="utDatum" required onchange="loadAutok()"
+                    class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-mono text-sm sm:text-base outline-none focus:border-emerald-500/50 transition [color-scheme:dark] cursor-pointer">
                 </div>
-              </div>
-              <div
-                class="relative z-10 md:col-span-2 lg:col-span-1 flex flex-col items-center justify-center py-4 bg-slate-900/40 border border-white/5 rounded-full mt-2">
-                <span class="text-slate-400 text-[11px] font-black tracking-widest uppercase"
-                  data-i18n="distance_label">Távolság</span>
-                <input type="text" id="utTav" placeholder="-" readonly
-                  class="bg-transparent border-none outline-none text-white font-black text-center text-xl w-full mt-1">
-              </div>
-              <button type="submit" data-i18n="submit_request"
-                class="w-full md:col-span-2 lg:col-span-1 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black py-4 sm:py-5 mt-2 rounded-full shadow-lg shadow-emerald-500/20 transition text-base">Kérés
-                beküldése</button>
-            </form>
+
+                <div class="relative w-full">
+                  <input type="text" id="utIndulas" data-i18n="departure_placeholder" placeholder="Indulási hely"
+                    required autocomplete="off" oninput="searchOSM(this, 'indulasList')"
+                    class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-sm sm:text-base outline-none focus:border-emerald-500/50 transition">
+                  <div id="indulasList"
+                    class="absolute left-0 right-0 top-full mt-2 dropdown-bg rounded-[20px] shadow-2xl hidden max-h-48 overflow-y-auto border theme-border custom-scrollbar z-50">
+                  </div>
+                </div>
+
+                <div class="relative w-full">
+                  <input type="text" id="utErkezes" data-i18n="arrival_placeholder" placeholder="Érkezési hely" required
+                    autocomplete="off" oninput="searchOSM(this, 'erkezesList')"
+                    class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-sm sm:text-base outline-none focus:border-emerald-500/50 transition">
+                  <div id="erkezesList"
+                    class="absolute left-0 right-0 top-full mt-2 dropdown-bg rounded-[20px] shadow-2xl hidden max-h-48 overflow-y-auto border theme-border custom-scrollbar z-50">
+                  </div>
+                </div>
+
+                <div
+                  class="w-full flex flex-col items-center justify-center py-4 bg-slate-900/40 border border-white/5 rounded-full mt-2">
+                  <span class="text-slate-400 text-[11px] font-black tracking-widest uppercase"
+                    data-i18n="distance_label">Távolság</span>
+                  <input type="text" id="utTav" placeholder="-" readonly
+                    class="bg-transparent border-none outline-none text-white font-black text-center text-xl w-full mt-1">
+                </div>
+
+                <button type="submit" data-i18n="submit_request"
+                  class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black py-4 sm:py-5 mt-2 rounded-full shadow-lg shadow-emerald-500/20 transition text-base">Kérés
+                  beküldése</button>
+              </form>
+            </div>
           </div>
         </div>
 
@@ -701,8 +710,7 @@
 
   </main>
 
-  <!-- ======================= REJTETT MODALOK ======================= -->
-
+  <!-- REJTETT MODALOK -->
   <div id="kliensHistoryModal"
     class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
     <div
@@ -1108,12 +1116,35 @@
 
   <div id="toastContainer" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
 
-  <button id="unclosedTripIndicator" onclick="toggleModalWithAnim('kliensHistoryModal')"
-    class="hidden fixed bottom-24 right-4 sm:right-6 md:bottom-10 md:right-10 z-[90] bg-amber-500 text-white p-3 sm:p-4 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.5)] animate-bounce transition-transform hover:scale-110 flex items-center justify-center">
-    <span class="text-xl sm:text-2xl drop-shadow-md">🔔</span>
-    <span id="unclosedTripCount"
-      class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] sm:text-xs font-black w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full border-2 border-slate-900 shadow-lg">1</span>
-  </button>
+  <!-- TÖKÉLETESÍTETT CSENGŐ ÉS ÉRTESÍTÉSI ABLAK -->
+  <div id="fuvarJelzoIkon"
+    class="hidden fixed bottom-6 right-6 sm:bottom-10 sm:right-10 z-[9999] flex flex-col items-end pointer-events-auto">
+
+    <!-- Értesítések lenyíló ablak (Alapból rejtve) -->
+    <div id="unclosedDropdown"
+      class="hidden mb-4 w-72 sm:w-80 theme-card border theme-border rounded-2xl p-4 shadow-2xl bg-slate-900/95 backdrop-blur-xl transform transition-all origin-bottom-right">
+      <h4 class="font-bold text-white mb-3 text-sm flex items-center gap-2 border-b border-white/10 pb-3">
+        <span>🔔</span> <span data-i18n="unclosed_trips_title">Lezárásra váró fuvarok</span>
+      </h4>
+      <div id="unclosedDropdownList" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
+        <div class="text-center py-4 text-xs font-bold text-slate-400">Betöltés...</div>
+      </div>
+    </div>
+
+    <!-- A Harang Gomb -->
+    <button onclick="toggleUnclosedDropdown(event)"
+      class="flex flex-col items-center justify-center hover:scale-110 transition-transform cursor-pointer outline-none">
+      <div id="bellAnimation" class="relative">
+        <div
+          class="bg-amber-500 text-white w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(245,158,11,0.6)]">
+          <span class="text-3xl sm:text-4xl drop-shadow-md">🔔</span>
+        </div>
+        <!-- Piros szám (Csak akkor látszik, ha van értesítés) -->
+        <span id="unclosedTripCount"
+          class="hidden absolute -top-2 -right-2 bg-red-600 text-white text-[14px] font-black w-8 h-8 items-center justify-center rounded-full border-[3px] border-[#0f172a] shadow-xl">0</span>
+      </div>
+    </button>
+  </div>
 
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>

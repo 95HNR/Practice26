@@ -13,6 +13,73 @@ window.currentRangsor = [];
 
 const socket = (typeof io !== 'undefined') ? io('http://localhost:3000') : null;
 
+// ==========================================
+// ÚJ ÉRTESÍTÉSI MENÜ LOGIKA (CSENGŐ)
+// ==========================================
+window.toggleUnclosedDropdown = function (event) {
+  event.stopPropagation();
+  const dropdown = document.getElementById('unclosedDropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('hidden');
+  }
+};
+
+document.addEventListener('click', (e) => {
+  // Bezárja a csengő menüjét, ha mellékattintanak
+  if (!e.target.closest('#fuvarJelzoIkon')) {
+    document.getElementById('unclosedDropdown')?.classList.add('hidden');
+  }
+
+  // Eredeti dropdown logikák
+  if (!e.target.closest('.relative')) {
+    document.getElementById('indulasList')?.classList.add('hidden');
+    document.getElementById('erkezesList')?.classList.add('hidden');
+  }
+  if (!e.target.closest('#adminAddMenu') && !e.target.closest('#adminHistoryMenu') && !e.target.closest('#adminManageMenu')) {
+    if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
+  }
+});
+
+// ==========================================
+// CSENGŐ LÁTHATÓSÁGÁT VEZÉRLŐ KÖZPONTI FÜGGVÉNY
+// ==========================================
+window.updateBellVisibility = function () {
+  const bell = document.getElementById('fuvarJelzoIkon');
+  if (!bell) return;
+
+  // Szekciók lekérése a DOM-ból
+  const loginSection = document.getElementById('loginSection');
+  const adminSection = document.getElementById('adminSection');
+  const kliensSection = document.getElementById('kliensSection');
+
+  // Ellenőrizzük, hogy éppen melyik nézet látható a képernyőn
+  const isLoginVisible = loginSection && !loginSection.classList.contains('hidden');
+  const isAdminVisible = adminSection && !adminSection.classList.contains('hidden');
+  const isKliensVisible = kliensSection && !kliensSection.classList.contains('hidden');
+
+  const user = window.AppState?.user;
+  const role = (user?.role || '').toUpperCase();
+
+  // CSAK AKKOR jelenhet meg, ha a Kliens szekció aktív, NEM admin, és NEM a login oldalon vagyunk
+  if (isKliensVisible && !isAdminVisible && !isLoginVisible && role !== 'ADMIN') {
+    if (bell.parentElement !== document.body) {
+      document.body.appendChild(bell);
+    }
+    bell.style.setProperty('display', 'flex', 'important');
+    bell.style.setProperty('visibility', 'visible', 'important');
+    bell.style.setProperty('opacity', '1', 'important');
+    bell.style.setProperty('position', 'fixed', 'important');
+    bell.style.setProperty('bottom', '1.5rem', 'important');
+    bell.style.setProperty('right', '1.5rem', 'important');
+    bell.style.setProperty('z-index', '99999', 'important');
+    bell.classList.remove('hidden');
+  } else {
+    // Bármilyen más esetben (bejelentkezés, admin, vagy rejtett kliens oldal) kíméletlenül eltüntetjük
+    bell.style.setProperty('display', 'none', 'important');
+    bell.classList.add('hidden');
+  }
+};
+
 window.showNotification = function (msg) {
   const container = document.getElementById('alertContainer');
   if (!container) return;
@@ -133,9 +200,17 @@ window.toggleTheme = function () {
   }
 }
 
+// A csengő áthelyezése és a nyelvválasztó inicializálása betöltéskor
 document.addEventListener('DOMContentLoaded', () => {
-  initLanguageSwitcher();
-  if (localStorage.getItem('drivecheck_theme') === 'light') document.body.classList.add('light-theme');
+  const bell = document.getElementById('fuvarJelzoIkon');
+  if (bell && document.body) {
+    document.body.appendChild(bell);
+  }
+  
+  // Itt hívjuk meg a nyelvválasztó inicializálását, hogy az 1 gombos fordítás újra működjön
+  if (typeof initLanguageSwitcher === 'function') {
+    initLanguageSwitcher();
+  }
 });
 
 window.toggleDropdown = function (dropdownId, event) {
@@ -155,16 +230,6 @@ window.closeAllDropdowns = function () {
     if (el) el.classList.add('hidden');
   });
 };
-
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.relative')) {
-    document.getElementById('indulasList')?.classList.add('hidden');
-    document.getElementById('erkezesList')?.classList.add('hidden');
-  }
-  if (!e.target.closest('#adminAddMenu') && !e.target.closest('#adminHistoryMenu') && !e.target.closest('#adminManageMenu')) {
-    if (typeof closeAllDropdowns === 'function') closeAllDropdowns();
-  }
-});
 
 window.closeModal = function (modalId) { document.getElementById(modalId).classList.add('hidden'); };
 window.openModalWithAnim = function (modalId) {
@@ -284,23 +349,28 @@ window.renderUI = async function () {
     document.getElementById('adminSection').classList.add('hidden');
     document.getElementById('kliensSection').classList.add('hidden');
     document.getElementById('userInfo').classList.add('hidden');
-    document.body.classList.remove('admin-mode');
+
+    window.updateBellVisibility();
     return;
   }
 
   document.getElementById('loginSection').classList.add('hidden');
   document.getElementById('userInfo').classList.remove('hidden');
-
   document.getElementById('welcomeText').textContent = t('welcome_user').replace('{x}', currentUser.username);
 
   const badge = document.getElementById('roleBadge');
-  badge.textContent = t(currentUser.role === 'ADMIN' ? 'role_admin' : 'role_user');
-  badge.className = currentUser.role === 'ADMIN'
+  const role = (currentUser.role || '').toUpperCase();
+  const isAdmin = role === 'ADMIN';
+
+  badge.textContent = t(isAdmin ? 'role_admin' : 'role_user');
+  badge.className = isAdmin
     ? "px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-500 border border-amber-500/30 mt-1"
     : "px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-400 border border-blue-500/30 mt-1";
 
-  if (currentUser.role === 'ADMIN') {
+  if (isAdmin) {
     document.body.classList.add('admin-mode');
+    document.body.classList.remove('driver-mode');
+
     document.getElementById('adminSection').classList.remove('hidden');
     document.getElementById('adminSection').classList.add('fade-in');
     document.getElementById('kliensSection').classList.add('hidden');
@@ -315,9 +385,10 @@ window.renderUI = async function () {
     if (typeof loadAuditLog === 'function') loadAuditLog();
     if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
     if (typeof loadFlottaStatisztika === 'function') loadFlottaStatisztika();
-
   } else {
     document.body.classList.remove('admin-mode');
+    document.body.classList.add('driver-mode');
+
     document.getElementById('adminSection').classList.add('hidden');
     document.getElementById('kliensSection').classList.remove('hidden');
     document.getElementById('kliensSection').classList.add('fade-in');
@@ -328,6 +399,9 @@ window.renderUI = async function () {
 
     if (document.getElementById('userHistoryBtn')) document.getElementById('userHistoryBtn').classList.remove('hidden');
   }
+
+  // Itt hívjuk meg közvetlenül a láthatóság beállítását
+  window.updateBellVisibility();
 
   resetDistanceField(true, true);
   const datumInput = document.getElementById('utDatum');
@@ -823,24 +897,6 @@ window.submitEditUser = async function (event) {
   } catch (e) { alert(t('network_error')); }
 };
 
-window.deleteUserAction = async function (id, username) {
-  if (!confirm(t('confirm_delete_user').replace('{x}', username))) return;
-  try {
-    const res = await fetch(`http://localhost:3000/api/admin/users/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${window.AppState.token}` }
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      alert(translateDynamic(err.hiba) || t('error_deleting'));
-      return;
-    }
-    showNotification(t('account_deleted').replace('{x}', username));
-    loadSzemelyzet();
-    if (typeof loadAuditLog === 'function') loadAuditLog();
-  } catch (e) { alert(t('network_error')); }
-};
-
 window.loadUtak = async function () {
   const token = window.AppState.token; const currentUser = window.AppState.user; if (!token || !currentUser) return;
   const szuro = document.getElementById('adminKerelmekSzuro')?.value || '';
@@ -869,7 +925,6 @@ window.loadUtak = async function () {
         if (u.status === 'ELUTASITOTT') { statusStyle = 'bg-red-500/20 text-red-400 border-red-500/30'; statusDot = 'bg-red-400'; }
         if (u.status === 'TELJESITVE') { statusStyle = 'bg-blue-500/20 text-blue-400 border-blue-500/30'; statusDot = 'bg-blue-400'; }
 
-        // STÁTUSZ FORDÍTÁSI LOGIKA:
         let translatedStatus = u.status;
         if (u.status === 'BEERKEZO') translatedStatus = t('status_pending') || 'BEÉRKEZŐ';
         else if (u.status === 'JOVAHAGYOTT') translatedStatus = t('status_approved') || 'JÓVÁHAGYOTT';
@@ -905,12 +960,21 @@ window.loadUtak = async function () {
   } catch (e) { }
 };
 
+// ==========================================
+// ÚJ KLIENS ELŐZMÉNYEK ÉS CSENGŐ POPULÁLÁS
+// ==========================================
 window.loadKliensElozmenyek = async function (showAll = false) {
-  const token = window.AppState.token;
-  const currentUser = window.AppState.user;
+  const token = window.AppState?.token;
+  const currentUser = window.AppState?.user;
+  const role = (currentUser?.role || '').toUpperCase();
 
-  if (!token || currentUser.role === 'ADMIN') {
-    document.getElementById('unclosedTripIndicator')?.classList.add('hidden');
+  // Mindig frissítjük a láthatóságot a központi függvénnyel
+  if (typeof window.updateBellVisibility === 'function') {
+    window.updateBellVisibility();
+  }
+
+  // Ha nincs token vagy admin a felhasználó, nem töltjük be a kliens előzményeket
+  if (!token || role === 'ADMIN') {
     return;
   }
 
@@ -921,13 +985,58 @@ window.loadKliensElozmenyek = async function (showAll = false) {
   const szuroValue = szuroInput ? szuroInput.value.trim() : '';
 
   try {
-    const utak = await API.fetchUtak(token, false, '');
-    let unclosedCount = 0;
+    const response = await API.fetchUtak(token, false, '');
 
-    utak.forEach(u => {
-      if (u.status === 'JOVAHAGYOTT') unclosedCount++;
-    });
+    let utak = [];
+    if (Array.isArray(response)) {
+      utak = response;
+    } else if (response && Array.isArray(response.utak)) {
+      utak = response.utak;
+    }
 
+    // 1. ÉRTESÍTÉSI MENÜ FELTÖLTÉSE (CSENGŐ LISTA)
+    const unclosedTrips = utak.filter(u => u.status === 'JOVAHAGYOTT');
+    const unclosedCount = unclosedTrips.length;
+
+    const dropdownList = document.getElementById('unclosedDropdownList');
+    if (dropdownList) {
+      if (unclosedCount === 0) {
+        dropdownList.innerHTML = `<div class="text-slate-400 text-xs text-center py-6 font-bold">Minden fuvar lezárva! 🎉</div>`;
+      } else {
+        dropdownList.innerHTML = unclosedTrips.map(u => `
+          <div class="bg-slate-900/50 border border-white/10 rounded-xl p-3 flex flex-col gap-2 hover:bg-white/10 transition cursor-pointer" onclick="openLezarModal(${u.id}, '${u.auto_rendszam}'); document.getElementById('unclosedDropdown').classList.add('hidden');">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-mono text-emerald-400 font-black tracking-widest text-sm">${u.auto_rendszam}</span>
+              <span class="text-[10px] text-slate-400 font-bold bg-white/5 px-2 py-1 rounded">${u.datum ? u.datum.split('T')[0] : u.honap_ev}</span>
+            </div>
+            <div class="text-xs text-slate-300 font-medium truncate">📍 ${u.indulas.split(',')[0]}</div>
+            <div class="text-xs text-slate-300 font-medium truncate">🏁 ${u.erkezes.split(',')[0]}</div>
+            <button class="mt-2 w-full bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 py-2 rounded-lg text-[11px] uppercase tracking-wider font-black transition shadow-sm">⛽ ${t('close_trip') || 'Lezárás'}</button>
+          </div>
+        `).join('');
+      }
+    }
+
+    // PIROS ÉRTESÍTÉSI PÖTTY (BADGE) LOGIKÁJA
+    const countSpan = document.getElementById('unclosedTripCount');
+    const bellAnim = document.getElementById('bellAnimation');
+
+    if (unclosedCount > 0) {
+      if (bellAnim) bellAnim.classList.add('animate-bounce');
+      if (countSpan) {
+        countSpan.classList.remove('hidden');
+        countSpan.classList.add('flex');
+        countSpan.innerText = unclosedCount;
+      }
+    } else {
+      if (bellAnim) bellAnim.classList.remove('animate-bounce');
+      if (countSpan) {
+        countSpan.classList.add('hidden');
+        countSpan.classList.remove('flex');
+      }
+    }
+
+    // 2. NORMÁL ELŐZMÉNYEK A MODAL-BAN
     let megjelenitendoUtak = utak;
     if (szuroValue !== '') {
       megjelenitendoUtak = utak.filter(u => {
@@ -936,14 +1045,13 @@ window.loadKliensElozmenyek = async function (showAll = false) {
       });
     }
 
-    if (!Array.isArray(megjelenitendoUtak) || megjelenitendoUtak.length === 0) {
+    if (megjelenitendoUtak.length === 0) {
       if (szuroValue !== '') {
         container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold bg-white/5 border border-dashed border-white/10 rounded-2xl">${t('no_trip_for_date')}</div>`;
       } else {
         container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold bg-white/5 border border-dashed border-white/10 rounded-2xl">${t('no_trips_yet')}</div>`;
       }
     } else {
-
       const MAX_ITEMS = 15;
       const limitList = (!showAll && szuroValue === '') ? megjelenitendoUtak.slice(0, MAX_ITEMS) : megjelenitendoUtak;
 
@@ -953,12 +1061,15 @@ window.loadKliensElozmenyek = async function (showAll = false) {
             (u.status === 'TELJESITVE' ? 'text-blue-400 bg-blue-500/20 border border-blue-500/30' :
               'text-amber-400 bg-amber-500/20 border border-amber-500/30'));
 
-        // STÁTUSZ FORDÍTÁSI LOGIKA (Kliensnek is)
-        let translatedStatus = u.status;
-        if (u.status === 'BEERKEZO') translatedStatus = t('status_pending') || 'BEÉRKEZŐ';
-        else if (u.status === 'JOVAHAGYOTT') translatedStatus = t('status_approved') || 'JÓVÁHAGYOTT';
-        else if (u.status === 'ELUTASITOTT') translatedStatus = t('status_rejected') || 'ELUTASÍTOTT';
-        else if (u.status === 'TELJESITVE') translatedStatus = t('status_completed') || 'TELJESÍTVE';
+        let tKey = '';
+        switch (u.status) {
+          case 'BEERKEZO': tKey = 'status_pending'; break;
+          case 'JOVAHAGYOTT': tKey = 'status_approved'; break;
+          case 'ELUTASITOTT': tKey = 'status_rejected'; break;
+          case 'TELJESITVE': tKey = 'status_completed'; break;
+          default: tKey = u.status;
+        }
+        let translatedStatus = t(tKey);
 
         let gombHTML = '';
         if (u.status === 'JOVAHAGYOTT') {
@@ -992,17 +1103,8 @@ window.loadKliensElozmenyek = async function (showAll = false) {
       container.innerHTML = html;
     }
 
-    const indicator = document.getElementById('unclosedTripIndicator');
-    const countSpan = document.getElementById('unclosedTripCount');
-    if (unclosedCount > 0) {
-      indicator?.classList.remove('hidden');
-      if (countSpan) countSpan.innerText = unclosedCount;
-    } else {
-      indicator?.classList.add('hidden');
-    }
-
   } catch (e) {
-    console.error(e);
+    console.error("Hiba a kliens előzmények betöltésekor:", e);
   }
 };
 
