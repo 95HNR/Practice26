@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DriveCheck V2 | Flottakezelő</title>
+  <title>DriveCheck V2</title>
   <link href="css/output.css" rel="stylesheet">
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -41,16 +41,15 @@
       --blob-2: #d8b4fe;
     }
 
-    body.admin-mode {
-      overflow: hidden;
-    }
-
+    /* GLOBÁLIS GÖRGETÉS - Itt nincs többé overflow: hidden trükközés! */
     body {
       background: radial-gradient(circle at 50% -20%, var(--bg-grad-start), var(--bg-grad-end));
       background-attachment: fixed;
+      /* A háttér fix marad görgetéskor is */
       color: var(--text-main);
       font-family: 'Inter', sans-serif;
       min-height: 100vh;
+      overflow-x: hidden;
       transition: background 0.6s ease, color 0.6s ease;
     }
 
@@ -66,7 +65,6 @@
       color: #475569 !important;
     }
 
-    /* OPTIMALIZÁLT: GPU gyorsítás bekapcsolva a hardveres rendereléshez */
     .glass-panel {
       background: var(--glass-bg) !important;
       backdrop-filter: blur(20px);
@@ -155,7 +153,6 @@
       background-color: var(--blob-2);
     }
 
-    /* OPTIMALIZÁLT: will-change hozzáadva a simább scroll-animációhoz */
     .reveal {
       opacity: 0;
       transform: translateY(30px);
@@ -196,7 +193,8 @@
     }
 
     .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
+      width: 8px;
+      height: 8px;
     }
 
     .custom-scrollbar::-webkit-scrollbar-track {
@@ -205,12 +203,12 @@
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.15);
       border-radius: 10px;
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.3);
     }
 
     .light-theme .custom-scrollbar::-webkit-scrollbar-track {
@@ -218,7 +216,7 @@
     }
 
     .light-theme .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.15);
+      background: rgba(0, 0, 0, 0.2);
     }
 
     .light-theme .glass-panel {
@@ -230,7 +228,6 @@
       color: #1e293b !important;
     }
 
-    /* OPTIMALIZÁLT: Erőforrásigényes dupla blur kikapcsolva, helyette színezés */
     .req-card {
       background: rgba(30, 41, 59, 0.75) !important;
       border: 1px solid rgba(255, 255, 255, 0.1) !important;
@@ -334,82 +331,178 @@
     .light-theme .bg-red-400 {
       background-color: #dc2626 !important;
     }
+
+    /* =========================================
+       NYELVVÁLASZTÓ GOMB STABILIZÁLÁSA (BAL ALSÓ SAROK)
+       ========================================= */
+    .lang-floating-btn {
+      position: fixed !important;
+      bottom: 1.5rem !important;
+      left: 1.5rem !important;
+      z-index: 9999 !important;
+      background: var(--nav-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+
+    .lang-floating-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    }
+
+    .lang-select-native {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-weight: 900;
+      font-size: 1rem;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+    }
+
+    .light-theme .lang-floating-btn {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .light-theme .lang-select-native {
+      color: #0f172a;
+    }
+
+    @media (max-width: 768px) {
+      .lang-select-native {
+        font-size: 0.85rem !important;
+      }
+
+      #unclosedTripIndicator {
+        bottom: 1.5rem !important;
+        right: 1rem !important;
+        padding: 0.75rem !important;
+      }
+    }
+
+    @media (min-width: 1440px) {
+      html {
+        font-size: 17px;
+      }
+    }
+
+    @media (min-width: 1600px) {
+      html {
+        font-size: 19px;
+      }
+    }
+
+    @media (min-width: 1920px) {
+      html {
+        font-size: 22px;
+      }
+    }
+
+    @media (min-width: 2560px) {
+      html {
+        font-size: 28px;
+      }
+    }
+
+    @media (min-width: 3840px) {
+      html {
+        font-size: 38px;
+      }
+    }
+
+    @media (min-width: 1921px) {
+      html {
+        font-size: 0.833333vw;
+      }
+    }
   </style>
 </head>
 
-<body class="font-sans antialiased">
+<body class="font-sans antialiased overflow-x-hidden">
+
   <div class="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
     <div class="liquid-blob blob-1 top-[-10%] left-[-10%]"></div>
     <div class="liquid-blob blob-2 bottom-[-10%] right-[-10%]"></div>
   </div>
 
+  <!-- Fejléc (Sticky odafent marad görgetéskor is) -->
   <header id="mainHeader"
-    class="theme-card !border-x-0 !border-t-0 border-b theme-border px-6 py-4 flex justify-between items-center sticky top-0 z-40 rounded-none shadow-sm w-full h-[70px]">
-    <div class="flex items-center gap-3">
-      <span class="text-3xl">🚗</span>
-      <span class="text-2xl font-black text-blue-500 tracking-tight">DriveCheck</span>
+    class="theme-card !border-x-0 !border-t-0 border-b theme-border px-4 sm:px-6 py-4 flex justify-between items-center sticky top-0 z-40 rounded-none shadow-sm w-full h-20">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <span class="text-2xl sm:text-3xl">🚗</span>
+      <span class="text-xl sm:text-2xl font-black text-blue-500 tracking-tight">DriveCheck</span>
     </div>
 
     <div class="hidden md:flex items-center gap-4">
       <button onclick="toggleTheme()"
         class="bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/30 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
-        🌓 <span>Téma</span>
+        🌓 <span data-i18n="nav_theme">Téma</span>
       </button>
 
-      <!-- Saját Előzményeim Gomb (Csak User módnál látszik majd) -->
       <button id="userHistoryBtn" onclick="openModalWithAnim('kliensHistoryModal')"
         class="hidden bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition">
-        📋 <span>Saját Előzményeim</span>
+        📋 <span data-i18n="nav_my_history">Saját Előzményeim</span>
       </button>
 
       <div id="adminAddMenu" class="hidden relative">
         <button onclick="toggleDropdown('addDropdownContent', event)"
           class="bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-emerald-500/20 transition">
-          ➕ <span>Hozzáadás</span>
+          ➕ <span data-i18n="nav_add">Hozzáadás</span>
         </button>
         <div id="addDropdownContent"
           class="absolute right-0 mt-2 w-48 theme-card border theme-border rounded-2xl p-2 hidden z-50 shadow-2xl bg-slate-900/95 backdrop-blur-md">
           <button onclick="openModalWithAnim('addAutoModal'); closeAllDropdowns()"
             class="w-full text-left px-4 py-3 hover:bg-white/10 rounded-xl text-sm font-bold transition text-white">🚗
-            Új Autó</button>
+            <span data-i18n="nav_add_car">Új Autó</span></button>
           <button onclick="openModalWithAnim('addUserModal'); closeAllDropdowns()"
             class="w-full text-left px-4 py-3 hover:bg-white/10 rounded-xl text-sm font-bold transition text-white">👤
-            Új Személyzet</button>
+            <span data-i18n="nav_add_staff">Új Személyzet</span></button>
         </div>
       </div>
 
       <div id="adminManageMenu" class="hidden relative">
         <button onclick="toggleDropdown('manageDropdownContent', event)"
           class="bg-amber-500/10 text-amber-500 border border-amber-500/30 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-amber-500/20 transition">
-          ⚙️ <span>Módosítás / Törlés</span>
+          ⚙️ <span data-i18n="nav_manage">Módosítás / Törlés</span>
         </button>
         <div id="manageDropdownContent"
           class="absolute right-0 mt-2 w-56 theme-card border theme-border rounded-2xl p-2 hidden z-50 shadow-2xl bg-slate-900/95 backdrop-blur-md">
           <button onclick="openModalWithAnim('manageFleetModal'); closeAllDropdowns()"
             class="w-full text-left px-4 py-3 hover:bg-white/10 rounded-xl text-sm font-bold transition text-white">🚘
-            Autó módosítása / törlése</button>
+            <span data-i18n="nav_manage_car">Autó módosítása / törlése</span></button>
           <button onclick="openModalWithAnim('manageStaffModal'); loadSzemelyzet(); closeAllDropdowns()"
             class="w-full text-left px-4 py-3 hover:bg-white/10 rounded-xl text-sm font-bold transition text-white">👥
-            Fiók módosítása / törlése</button>
+            <span data-i18n="nav_manage_staff">Fiók módosítása / törlése</span></button>
         </div>
       </div>
 
       <div id="adminHistoryMenu" class="hidden relative">
         <button onclick="toggleDropdown('historyDropdownContent', event)"
           class="bg-blue-500/10 text-blue-500 border border-blue-500/30 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-blue-500/20 transition">
-          📜 <span>Előzmények</span>
+          📜 <span data-i18n="nav_history">Előzmények</span>
         </button>
         <div id="historyDropdownContent"
           class="absolute right-0 mt-2 w-56 dropdown-bg border theme-border rounded-2xl p-2 hidden z-50 shadow-2xl">
           <button onclick="openModalWithAnim('auditModal'); closeAllDropdowns()"
-            class="w-full text-left px-4 py-3 dropdown-item rounded-xl text-sm font-bold transition text-white">📝 Audit
-            Napló</button>
+            class="w-full text-left px-4 py-3 dropdown-item rounded-xl text-sm font-bold transition text-white">📝 <span
+              data-i18n="nav_audit">Audit Napló</span></button>
           <button onclick="openModalWithAnim('historyModal'); closeAllDropdowns()"
-            class="w-full text-left px-4 py-3 dropdown-item rounded-xl text-sm font-bold transition text-white">📋 Fuvar
-            Előzmények</button>
+            class="w-full text-left px-4 py-3 dropdown-item rounded-xl text-sm font-bold transition text-white">📋 <span
+              data-i18n="nav_trip_history">Fuvar Előzmények</span></button>
           <button onclick="openModalWithAnim('allSzervizHistoryModal'); loadAllSzervizHistory(); closeAllDropdowns()"
             class="w-full text-left px-4 py-3 dropdown-item rounded-xl text-sm font-bold transition text-white">🛠️
-            Szerviztörténet</button>
+            <span data-i18n="nav_service">Szerviztörténet</span></button>
         </div>
       </div>
 
@@ -418,7 +511,7 @@
           <span id="welcomeText" class="text-sm font-bold theme-text"></span>
           <span id="roleBadge" class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest mt-1"></span>
         </div>
-        <button onclick="logout()"
+        <button onclick="logout()" data-i18n="nav_logout"
           class="bg-red-500/20 hover:bg-red-500/80 border border-red-500/30 text-red-500 hover:text-white px-4 py-2 rounded-xl text-sm font-bold transition">Kilépés</button>
       </div>
     </div>
@@ -432,49 +525,49 @@
     </button>
   </header>
 
-  <!-- Mobil Menü Modal (Teljes Képernyős, Görgethető) -->
   <div id="mobileMenu"
     class="hidden fixed inset-0 bg-slate-900/95 z-[9999] flex flex-col items-center justify-start pt-16 pb-12 gap-4 backdrop-blur-3xl transition-opacity overflow-y-auto custom-scrollbar">
-    <!-- JS tölti be -->
   </div>
 
-  <main class="w-full px-4 sm:px-6 lg:px-8 mx-auto relative">
+  <!-- TERMÉSZETES GÖRGETÉS KONTÉNER - Itt már a teljes lap görög! -->
+  <main class="w-full px-4 sm:px-6 lg:px-8 mx-auto relative pt-4 pb-32">
 
-    <div id="loginSection" class="max-w-md mx-auto mt-24 theme-card p-10 rounded-3xl fade-in">
+    <div id="loginSection" class="max-w-md mx-auto mt-16 sm:mt-24 theme-card p-6 sm:p-10 rounded-3xl fade-in w-full">
       <div class="text-center mb-8">
         <div class="text-5xl mb-4">🔑</div>
-        <h2 class="text-3xl font-black theme-text tracking-tight">Bejelentkezés</h2>
+        <h2 class="text-2xl sm:text-3xl font-black theme-text tracking-tight" data-i18n="login_title">Bejelentkezés</h2>
       </div>
       <div id="loginError"
         class="hidden bg-red-500/10 border border-red-500/30 text-red-500 p-4 rounded-xl text-sm mb-6 text-center font-bold">
       </div>
       <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
-        <input type="text" id="username" placeholder="Felhasználónév" required
+        <input type="text" id="username" data-i18n="usernamePlaceholder" placeholder="Felhasználónév" required
           class="theme-input rounded-xl p-4 w-full font-medium">
-        <input type="password" id="password" placeholder="Jelszó" required
+        <input type="password" id="password" data-i18n="passwordPlaceholder" placeholder="Jelszó" required
           class="theme-input rounded-xl p-4 w-full font-medium">
-        <button type="submit"
+        <button type="submit" data-i18n="login_btn"
           class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-600/30 text-lg mt-2">Belépés
           a rendszerbe</button>
       </form>
     </div>
 
     <!-- ================= ADMIN FŐOLDAL ================= -->
-    <div id="adminSection"
-      class="hidden mt-4 w-full h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden custom-scrollbar pb-10">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch w-full h-full pb-4">
-        <!-- BAL OLDAL (Vezérlőpult és listák) -->
-        <div class="lg:col-span-3 xl:col-span-2 flex flex-col gap-5 h-full">
+    <div id="adminSection" class="hidden w-full h-auto">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch w-full">
+
+        <!-- BAL OLDAL -->
+        <div class="lg:col-span-3 xl:col-span-2 flex flex-col gap-5">
           <div
-            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full h-full relative">
-            <h3 class="font-black text-blue-400 text-sm flex items-center gap-2 mb-6"><span>🛡️</span> Vezérlőpult</h3>
-            <div class="flex flex-col gap-4 flex-1 justify-center">
+            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full relative">
+            <h3 class="font-black text-blue-400 text-sm flex items-center gap-2 mb-6"><span>🛡️</span> <span
+                data-i18n="dash_title">Vezérlőpult</span></h3>
+            <div class="flex flex-col gap-4">
               <select id="periodusTipus" onchange="toggleDateInputs()"
                 class="bg-slate-900/60 border border-white/5 text-white rounded-full px-5 py-3 text-xs font-bold cursor-pointer w-full">
-                <option value="nap">Napi</option>
-                <option value="honap">Havi</option>
-                <option value="ev">Éves</option>
-                <option value="intervallum">Egyedi (tól-ig)</option>
+                <option value="nap" data-i18n="dash_daily">Napi</option>
+                <option value="honap" data-i18n="dash_monthly">Havi</option>
+                <option value="ev" data-i18n="dash_yearly">Éves</option>
+                <option value="intervallum" data-i18n="dash_custom">Egyedi (tól-ig)</option>
               </select>
               <input type="date" id="dateStart"
                 class="bg-slate-900/60 border border-white/5 text-white rounded-full px-5 py-3 text-xs font-bold w-full">
@@ -484,480 +577,547 @@
             <div class="grid grid-cols-2 gap-3 mt-6 pt-6 border-t border-white/10">
               <button onclick="downloadAdvancedJelentes(event)"
                 class="bg-blue-600/80 hover:bg-blue-500 py-3 rounded-full text-[10px] font-black text-white transition">📥
-                CSV</button>
+                <span data-i18n="btn_csv">CSV</span></button>
               <button onclick="downloadExcelJelentes(event)"
                 class="bg-emerald-600/80 hover:bg-emerald-500 py-3 rounded-full text-[10px] font-black text-white transition">📊
-                Excel</button>
+                <span data-i18n="btn_excel">Excel</span></button>
             </div>
           </div>
+
           <div
-            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col h-full">
-            <h4 class="font-bold mb-6 text-sm flex items-center gap-2 text-white"><span>📡</span> Élő Flottakövetés</h4>
-            <div id="aktivFlottaList" class="flex flex-col gap-2 flex-1"></div>
+            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full relative">
+            <h4 class="font-bold mb-6 text-sm flex items-center gap-2 text-white"><span>📡</span> <span
+                data-i18n="live_tracking">Élő Flottakövetés</span></h4>
+            <div id="aktivFlottaList" class="flex flex-col gap-2"></div>
           </div>
+
           <div
-            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col h-full">
-            <h4 class="font-bold mb-4 text-sm flex items-center gap-2 text-white"><span>🏆</span> Flotta Rangsor</h4>
+            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full relative">
+            <h4 class="font-bold mb-4 text-sm flex items-center gap-2 text-white"><span>🏆</span> <span
+                data-i18n="fleet_ranking">Flotta Rangsor</span></h4>
             <div id="flottaRangsor" class="flex flex-col gap-2"></div>
           </div>
         </div>
+
         <!-- KÖZÉPSŐ OSZLOP -->
-        <div class="lg:col-span-4 xl:col-span-5 flex flex-col gap-5 w-full h-full">
+        <div class="lg:col-span-4 xl:col-span-5 flex flex-col gap-5">
           <div
-            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full h-full relative">
-            <h4 class="font-bold mb-4 text-sm flex items-center gap-2 text-amber-500 shrink-0"><span>⚠️</span>
-              Értesítések</h4>
+            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full relative">
+            <h4 class="font-bold mb-4 text-sm flex items-center gap-2 text-amber-500"><span>⚠️</span> <span
+                data-i18n="alerts_title">Értesítések</span></h4>
             <div id="alertContainer" class="flex flex-col gap-2"></div>
           </div>
+
           <div
-            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full h-full relative">
-            <h4 class="font-bold mb-4 text-sm flex items-center gap-2 text-blue-400 shrink-0"><span>📩</span> Beérkező
-              kérelmek</h4>
+            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 rounded-[24px] shadow-lg flex flex-col w-full relative">
+            <h4 class="font-bold mb-4 text-sm flex items-center gap-2 text-blue-400"><span>📩</span> <span
+                data-i18n="requests_title">Beérkező kérelmek</span></h4>
             <div id="beerkezoList" class="grid grid-cols-1 xl:grid-cols-2 gap-3"></div>
           </div>
         </div>
-        <!-- JOBB OLDAL -->
-        <div class="lg:col-span-5 xl:col-span-5 h-full">
+
+        <!-- JOBB OLDAL (GRAFIKON) -->
+        <div class="lg:col-span-5 xl:col-span-5 flex flex-col h-full">
           <div
-            class="bg-white/5 backdrop-blur-xl border border-white/20 p-8 rounded-[24px] shadow-lg w-full flex flex-col h-full">
-            <h4 class="font-bold mb-6 text-xl text-white flex items-center gap-3 shrink-0"><span>📈</span> E havi
-              költség (RON)</h4>
-            <div class="flex-1 w-full relative min-h-0">
+            class="bg-white/5 backdrop-blur-xl border border-white/20 p-6 sm:p-8 rounded-[24px] shadow-lg w-full flex flex-col h-full min-h-[400px] lg:min-h-[35rem]">
+            <h4 class="font-bold mb-6 text-xl text-white flex items-center gap-3 shrink-0"><span>📈</span> <span
+                data-i18n="monthly_cost">E havi költség (RON)</span></h4>
+            <div class="w-full relative flex-1">
               <canvas id="costChart" class="absolute inset-0"></canvas>
             </div>
           </div>
         </div>
+
       </div>
     </div>
+    <!-- ================= ADMIN FŐOLDAL VÉGE ================= -->
 
     <!-- ================= SOFŐR FŐOLDAL ================= -->
-    <div id="kliensSection"
-      class="hidden mt-4 w-full h-[calc(100vh-100px)] overflow-y-auto overflow-x-hidden custom-scrollbar pb-10">
+    <div id="kliensSection" class="hidden w-full h-auto">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full pb-4">
-
-        <!-- BAL OLDAL (Űrlap Sidebar) -> Sticky asztali nézetben, mobilon simán görgethető -->
-        <div class="lg:col-span-4 xl:col-span-3 flex flex-col h-fit lg:sticky lg:top-[20px] z-30">
+        <!-- Az űrlap asztali nézetben lebeg (sticky) hogy mindig lásd, amíg a kocsikat görgeted lefelé -->
+        <div class="lg:col-span-4 xl:col-span-3 flex flex-col h-fit lg:sticky lg:top-[100px] z-30">
           <div id="soforUrlapContainer"
-            class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-8 w-full flex flex-col transition-all">
-            <h4 class="font-black mb-8 text-xl flex items-center gap-3 text-white"><span>✍️</span> Új kérés</h4>
-
-            <form onsubmit="addUt(event)" class="flex flex-col gap-6">
-              <div class="relative z-50">
+            class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-lg p-6 sm:p-8 w-full flex flex-col transition-all">
+            <h4 class="font-black mb-6 sm:mb-8 text-xl flex items-center gap-3 text-white"><span>✍️</span> <span
+                data-i18n="new_request">Új kérés</span></h4>
+            <form onsubmit="addUt(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
+              <div class="relative z-50 md:col-span-2 lg:col-span-1">
                 <select id="utRendszam" required
-                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-bold text-base outline-none focus:border-emerald-500/50 transition appearance-none cursor-pointer">
-                  <option value="">-- Válassz a szabad autók közül --</option>
+                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-bold text-sm sm:text-base outline-none focus:border-emerald-500/50 transition appearance-none cursor-pointer">
+                  <option value="" data-i18n="select_car_default">-- Válassz a szabad autók közül --</option>
                 </select>
               </div>
-              <div class="relative z-40">
+              <div class="relative z-40 md:col-span-2 lg:col-span-1">
                 <input type="date" id="utDatum" required onchange="loadAutok()"
-                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-mono text-base outline-none focus:border-emerald-500/50 transition [color-scheme:dark] cursor-pointer">
+                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-mono text-sm sm:text-base outline-none focus:border-emerald-500/50 transition [color-scheme:dark] cursor-pointer">
               </div>
               <div class="relative z-30">
-                <input type="text" id="utIndulas" placeholder="Indulási hely" required autocomplete="off"
-                  oninput="searchOSM(this, 'indulasList')"
-                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-base outline-none focus:border-emerald-500/50 transition">
+                <input type="text" id="utIndulas" data-i18n="departure_placeholder" placeholder="Indulási hely" required
+                  autocomplete="off" oninput="searchOSM(this, 'indulasList')"
+                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-sm sm:text-base outline-none focus:border-emerald-500/50 transition">
                 <div id="indulasList"
                   class="absolute left-0 right-0 top-full mt-2 dropdown-bg rounded-[20px] shadow-2xl hidden max-h-48 overflow-y-auto border theme-border custom-scrollbar">
                 </div>
               </div>
               <div class="relative z-20">
-                <input type="text" id="utErkezes" placeholder="Érkezési hely" required autocomplete="off"
-                  oninput="searchOSM(this, 'erkezesList')"
-                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-base outline-none focus:border-emerald-500/50 transition">
+                <input type="text" id="utErkezes" data-i18n="arrival_placeholder" placeholder="Érkezési hely" required
+                  autocomplete="off" oninput="searchOSM(this, 'erkezesList')"
+                  class="bg-slate-900/60 border border-white/5 text-white rounded-full px-6 py-4 w-full font-medium text-sm sm:text-base outline-none focus:border-emerald-500/50 transition">
                 <div id="erkezesList"
                   class="absolute left-0 right-0 top-full mt-2 dropdown-bg rounded-[20px] shadow-2xl hidden max-h-48 overflow-y-auto border theme-border custom-scrollbar">
                 </div>
               </div>
               <div
-                class="relative z-10 flex flex-col items-center justify-center py-4 bg-slate-900/40 border border-white/5 rounded-full mt-2">
-                <span class="text-slate-400 text-[11px] font-black tracking-widest uppercase">Távolság</span>
+                class="relative z-10 md:col-span-2 lg:col-span-1 flex flex-col items-center justify-center py-4 bg-slate-900/40 border border-white/5 rounded-full mt-2">
+                <span class="text-slate-400 text-[11px] font-black tracking-widest uppercase"
+                  data-i18n="distance_label">Távolság</span>
                 <input type="text" id="utTav" placeholder="-" readonly
                   class="bg-transparent border-none outline-none text-white font-black text-center text-xl w-full mt-1">
               </div>
-              <button type="submit"
-                class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black py-5 mt-2 rounded-full shadow-lg shadow-emerald-500/20 transition text-base">Kérés
+              <button type="submit" data-i18n="submit_request"
+                class="w-full md:col-span-2 lg:col-span-1 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black py-4 sm:py-5 mt-2 rounded-full shadow-lg shadow-emerald-500/20 transition text-base">Kérés
                 beküldése</button>
             </form>
           </div>
         </div>
 
-        <!-- JOBB OLDAL (Autók Kártya listája) -->
         <div class="lg:col-span-8 xl:col-span-9 w-full flex flex-col gap-8">
           <div
             class="bg-white/5 backdrop-blur-xl border border-white/20 rounded-[24px] shadow-lg p-6 flex flex-col h-full">
             <div id="kliensHeader" class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
-              <h4 class="font-bold text-lg flex items-center gap-2 text-white"><span>🚘</span> Elérhető Autók</h4>
+              <h4 class="font-bold text-lg flex items-center gap-2 text-white"><span>🚘</span> <span
+                  data-i18n="available_cars">Elérhető Autók</span></h4>
             </div>
-
-            <!-- Ez a doboz tűnt el véletlenül, ide pakolja a JS a kártyákat! -->
             <div id="kliensListaContainer" class="w-full">
               <div id="autoList" class="grid grid-cols-1 xl:grid-cols-2 gap-5"></div>
             </div>
-
           </div>
         </div>
 
       </div>
     </div>
-    <!-- ================= SOFŐR FŐOLDAL VÉGE ================= -->
 
-    <!-- ======================= REJTETT MODALOK ======================= -->
+  </main>
 
-    <!-- ÚJ MODAL A KLIENS SAJÁT ELŐZMÉNYEINEK (Mobil barát, nem táblázatos + SZŰRŐVEL) -->
-    <div id="kliensHistoryModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-6 rounded-3xl w-full max-w-lg relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+  <!-- ======================= REJTETT MODALOK ======================= -->
+
+  <div id="kliensHistoryModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div
+      class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-lg relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+      <div class="flex justify-between items-center mb-4">
+        <h4 class="font-bold text-lg sm:text-xl theme-text flex items-center gap-3"><span>📋</span> <span
+            data-i18n="modal_my_history">Saját Előzményeim</span></h4>
         <button onclick="closeModal('kliensHistoryModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-
-        <!-- JAVÍTOTT FEJLÉC A DÁTUM SZŰRŐVEL -->
-        <div
-          class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b theme-border pb-4">
-          <h4 class="font-bold text-xl theme-text flex items-center gap-3"><span>📋</span> Saját Előzményeim</h4>
-          <div class="flex items-center gap-2 theme-input p-2 rounded-xl w-full sm:w-auto">
-            <span class="text-slate-400 ml-2">📅</span>
-            <!-- A szűrő oninput eseménnyel azonnal frissíti a listát gépelés közben -->
-            <input type="text" id="kliensElozmenyekSzuro" oninput="loadKliensElozmenyek()"
-              placeholder="ÉÉÉÉ / ÉÉÉÉ-HH / ÉÉÉÉ-HH-NN"
-              class="bg-transparent text-sm font-bold theme-text p-1 outline-none w-full sm:w-48 placeholder-slate-500/70"
-              title="Szűrés évre, hónapra vagy napra">
-          </div>
-        </div>
-
-        <div id="kliensHistoryModalList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-3">
-          <!-- JS fogja feltölteni a korábbi fuvarokkal letisztult kártyás nézetben -->
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
+      </div>
+      <div class="mb-6 border-b theme-border pb-4">
+        <div class="flex items-center gap-2 theme-input p-2 rounded-xl w-full sm:w-max">
+          <span class="text-slate-400 ml-2">📅</span>
+          <input type="text" id="kliensElozmenyekSzuro" oninput="loadKliensElozmenyek()" data-i18n="filter_placeholder"
+            placeholder="ÉÉÉÉ / ÉÉÉÉ-HH / ÉÉÉÉ-HH-NN"
+            class="bg-transparent text-sm font-bold theme-text p-1 outline-none w-full sm:w-48 placeholder-slate-500/70">
         </div>
       </div>
+      <div id="kliensHistoryModalList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-3"></div>
     </div>
+  </div>
 
-    <div id="allFlottaModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-lg relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+  <div id="allFlottaModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div
+      class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-lg relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl theme-text flex items-center gap-3"><span>📡</span> <span
+            data-i18n="all_cars_on_road">Összes Jármű Úton</span></h4>
         <button onclick="closeModal('allFlottaModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl theme-text flex items-center gap-3"><span>📡</span> Összes Jármű Úton
-        </h4>
-        <div id="allFlottaList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-2"></div>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
       </div>
+      <div id="allFlottaList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-2"></div>
     </div>
-    <div id="allRangsorModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-lg relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+  </div>
+
+  <div id="allRangsorModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div
+      class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-lg relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl theme-text flex items-center gap-3"><span>🏆</span> <span
+            data-i18n="full_fleet_ranking">Teljes Flotta Rangsor</span></h4>
         <button onclick="closeModal('allRangsorModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl theme-text flex items-center gap-3"><span>🏆</span> Teljes Flotta
-          Rangsor</h4>
-        <div id="allRangsorList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-2"></div>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
       </div>
+      <div id="allRangsorList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-2"></div>
     </div>
-    <div id="allAlertsModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-2xl relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+  </div>
+
+  <div id="allAlertsModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div
+      class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-2xl relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl theme-text flex items-center gap-3 text-amber-500"><span>⚠️</span> <span
+            data-i18n="all_alerts">Összes Értesítés</span></h4>
         <button onclick="closeModal('allAlertsModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl theme-text flex items-center gap-3 text-amber-500"><span>⚠️</span>
-          Összes
-          Értesítés</h4>
-        <div id="allAlertsList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-2"></div>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
       </div>
+      <div id="allAlertsList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-2"></div>
     </div>
-    <div id="allRequestsModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-3xl relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+  </div>
+
+  <div id="allRequestsModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div
+      class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-3xl relative glass-panel max-h-[90vh] flex flex-col z-[80]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl theme-text flex items-center gap-3 text-blue-400"><span>📩</span> <span
+            data-i18n="pending_requests">Engedélyezésre Váró Fuvarok</span></h4>
         <button onclick="closeModal('allRequestsModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl theme-text flex items-center gap-3 text-blue-400"><span>📩</span>
-          Engedélyezésre
-          Váró Fuvarok</h4>
-        <div id="allRequestsList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-2"></div>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
       </div>
+      <div id="allRequestsList" class="overflow-y-auto flex-1 pr-2 custom-scrollbar flex flex-col gap-2"></div>
     </div>
-    <div id="manageFleetModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-6xl relative glass-panel max-h-[90vh] flex flex-col">
+  </div>
+
+  <div id="manageFleetModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-6xl relative glass-panel max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl flex items-center gap-3 theme-text"><span>🚘</span> <span
+            data-i18n="manage_fleet">Flotta Kezelése</span></h4>
         <button onclick="closeModal('manageFleetModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>🚘</span> Flotta Kezelése</h4>
-        <div class="overflow-y-auto flex-1 pr-2 custom-scrollbar">
-          <div id="adminAutoList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-        </div>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
+      </div>
+      <div class="overflow-y-auto flex-1 pr-2 custom-scrollbar">
+        <div id="adminAutoList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
       </div>
     </div>
-    <div id="manageStaffModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-4xl relative glass-panel max-h-[90vh] flex flex-col">
+  </div>
+
+  <div id="manageStaffModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-4xl relative glass-panel max-h-[90vh] flex flex-col">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl flex items-center gap-3 theme-text"><span>👥</span> <span
+            data-i18n="manage_staff">Személyzet Kezelése</span></h4>
         <button onclick="closeModal('manageStaffModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>👥</span> Személyzet Kezelése
-        </h4>
-        <div class="overflow-x-auto overflow-y-auto flex-1 rounded-2xl theme-border custom-scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead class="border-b theme-border text-xs uppercase tracking-widest font-black theme-muted">
-              <tr>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">ID</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Név</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Jogosultság</th>
-                <th class="py-4 px-5 text-right sticky top-0 bg-slate-900">Műveletek</th>
-              </tr>
-            </thead>
-            <tbody id="staffList" class="divide-y theme-border text-sm">
-              <tr>
-                <td colspan="4" class="py-8 text-center theme-muted font-bold">Felhasználók betöltése...</td>
-              </tr>
-            </tbody>
-          </table>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
+      </div>
+      <div class="w-full overflow-x-auto rounded-2xl theme-border custom-scrollbar">
+        <table class="w-full text-left border-collapse whitespace-nowrap">
+          <thead class="border-b theme-border text-xs uppercase tracking-widest font-black theme-muted">
+            <tr>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_id">ID</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_name">Név</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_role">Jogosultság</th>
+              <th class="py-4 px-5 text-right sticky top-0 bg-slate-900" data-i18n="th_actions">Műveletek</th>
+            </tr>
+          </thead>
+          <tbody id="staffList" class="divide-y theme-border text-sm"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="addAutoModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-2xl relative glass-panel z-[60]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl flex items-center gap-3 theme-text"><span>➕</span> <span
+            data-i18n="add_new_car">Új Autó Regisztrálása</span></h4>
+        <button onclick="closeModal('addAutoModal')"
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
+      </div>
+      <form onsubmit="addAuto(event)" class="space-y-5">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input type="text" id="autoRendszam" data-i18n="car_plate" placeholder="RENDSZÁM" required
+            class="theme-input rounded-xl p-3.5 w-full uppercase font-black tracking-widest text-center">
+          <input type="text" id="autoTipus" data-i18n="car_type" placeholder="Típus (pl. Audi)" required
+            class="theme-input rounded-xl p-3.5 w-full font-medium text-center">
+          <input type="number" id="autoAktualisKm" data-i18n="car_km" placeholder="Aktuális km" required
+            class="theme-input rounded-xl p-3.5 w-full font-medium text-center">
         </div>
-      </div>
-    </div>
-    <div id="addAutoModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-2xl relative glass-panel z-[60]"><button
-          onclick="closeModal('addAutoModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>➕</span> Új Autó Regisztrálása
-        </h4>
-        <form onsubmit="addAuto(event)" class="space-y-5">
-          <div class="grid grid-cols-3 gap-4"><input type="text" id="autoRendszam" placeholder="RENDSZÁM" required
-              class="theme-input rounded-xl p-3.5 w-full uppercase font-black tracking-widest text-center"><input
-              type="text" id="autoTipus" placeholder="Típus (pl. Audi)" required
-              class="theme-input rounded-xl p-3.5 w-full font-medium text-center"><input type="number"
-              id="autoAktualisKm" placeholder="Aktuális km" required
-              class="theme-input rounded-xl p-3.5 w-full font-medium text-center">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="itp_valid">ITP
+              Érvényes</label><input type="date" id="autoItp" class="theme-input rounded-xl p-3 w-full text-xs"></div>
+          <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="rca_valid">RCA
+              Érvényes</label><input type="date" id="autoBiztositas" class="theme-input rounded-xl p-3 w-full text-xs">
           </div>
-          <div class="grid grid-cols-3 gap-3">
-            <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">ITP Érvényes</label><input type="date"
-                id="autoItp" class="theme-input rounded-xl p-3 w-full text-xs"></div>
-            <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">RCA Érvényes</label><input type="date"
-                id="autoBiztositas" class="theme-input rounded-xl p-3 w-full text-xs"></div>
-            <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">Utadó Lejár</label><input type="date"
-                id="autoUtado" class="theme-input rounded-xl p-3 w-full text-xs"></div>
-          </div><select id="autoStatusz" class="theme-input rounded-xl p-4 w-full font-bold">
-            <option value="ELERHETO">ELÉRHETŐ</option>
-            <option value="FOGLALT">NEM ELÉRHETŐ</option>
-          </select><button type="submit"
-            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 text-lg">Hozzáadás
-            a Flottához</button>
-        </form>
-      </div>
+          <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="road_tax">Utadó
+              Lejár</label><input type="date" id="autoUtado" class="theme-input rounded-xl p-3 w-full text-xs"></div>
+        </div>
+        <select id="autoStatusz" class="theme-input rounded-xl p-4 w-full font-bold">
+          <option value="ELERHETO" data-i18n="status_available">ELÉRHETŐ</option>
+          <option value="FOGLALT" data-i18n="status_unavailable">NEM ELÉRHETŐ</option>
+        </select>
+        <button type="submit" data-i18n="add_to_fleet"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 text-lg">Hozzáadás
+          a Flottához</button>
+      </form>
     </div>
-    <div id="addUserModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-sm relative glass-panel z-[60]"><button
-          onclick="closeModal('addUserModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>👤</span> Személyzet
-          Hozzáadása</h4>
-        <div id="registerMessage" class="hidden p-4 rounded-xl text-sm mb-5 font-bold"></div>
-        <form onsubmit="createUser(event)" class="space-y-5"><input type="text" id="newUsername"
-            placeholder="Új Felhasználónév" required class="theme-input rounded-xl p-4 w-full font-medium"><input
-            type="password" id="newPassword" placeholder="Jelszó" required
-            class="theme-input rounded-xl p-4 w-full font-medium"><select id="newRole"
-            class="theme-input rounded-xl p-4 w-full font-bold">
-            <option value="USER">SOFŐR JOGOSULTSÁG</option>
-            <option value="ADMIN">ADMIN JOGOSULTSÁG</option>
-          </select><button type="submit"
-            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-600/30 text-lg">Fiók
-            Létrehozása</button></form>
+  </div>
+
+  <div id="addUserModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-sm relative glass-panel z-[60]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl flex items-center gap-3 theme-text"><span>👤</span> <span
+            data-i18n="add_staff_title">Személyzet Hozzáadása</span></h4>
+        <button onclick="closeModal('addUserModal')"
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
       </div>
+      <form onsubmit="createUser(event)" class="space-y-5">
+        <input type="text" id="newUsername" data-i18n="new_username" placeholder="Új Felhasználónév" required
+          class="theme-input rounded-xl p-4 w-full font-medium">
+        <input type="password" id="newPassword" data-i18n="new_password" placeholder="Jelszó" required
+          class="theme-input rounded-xl p-4 w-full font-medium">
+        <select id="newRole" class="theme-input rounded-xl p-4 w-full font-bold">
+          <option value="USER" data-i18n="role_user">SOFŐR JOGOSULTSÁG</option>
+          <option value="ADMIN" data-i18n="role_admin">ADMIN JOGOSULTSÁG</option>
+        </select>
+        <button type="submit" data-i18n="create_account"
+          class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl shadow-lg shadow-blue-600/30 text-lg">Fiók
+          Létrehozása</button>
+      </form>
     </div>
-    <div id="auditModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-4xl relative glass-panel max-h-[90vh] flex flex-col z-[60]">
+  </div>
+
+  <div id="auditModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div
+      class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-4xl relative glass-panel max-h-[90vh] flex flex-col z-[60]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl theme-text flex items-center gap-3"><span>📜</span> <span
+            data-i18n="audit_log_title">Rendszer Audit Napló</span></h4>
         <button onclick="closeModal('auditModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl theme-text flex items-center gap-3"><span>📜</span> Rendszer Audit Napló
-        </h4>
-        <div class="overflow-x-auto overflow-y-auto flex-1 rounded-2xl theme-border custom-scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead class="text-xs uppercase tracking-widest font-black theme-muted">
-              <tr>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Dátum</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Felhasználó</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Művelet</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Részletek</th>
-              </tr>
-            </thead>
-            <tbody id="auditLogList" class="text-sm">
-              <tr>
-                <td colspan="4" class="py-8 text-center theme-muted font-bold">Betöltés...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
+      </div>
+      <div class="w-full overflow-x-auto rounded-2xl theme-border custom-scrollbar">
+        <table class="w-full text-left border-collapse whitespace-nowrap">
+          <thead class="text-xs uppercase tracking-widest font-black theme-muted">
+            <tr>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_date">Dátum</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_user">Felhasználó</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_action">Művelet</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_details">Részletek</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogList" class="text-sm"></tbody>
+        </table>
       </div>
     </div>
-    <div id="allSzervizHistoryModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-4xl relative glass-panel max-h-[90vh] flex flex-col z-[60]">
+  </div>
+
+  <div id="allSzervizHistoryModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div
+      class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-4xl relative glass-panel max-h-[90vh] flex flex-col z-[60]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl theme-text flex items-center gap-3"><span>🛠️</span> <span
+            data-i18n="full_service_history">Teljes Szerviztörténet</span></h4>
         <button onclick="closeModal('allSzervizHistoryModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl theme-text flex items-center gap-3"><span>🛠️</span> Teljes
-          Szerviztörténet</h4>
-        <div class="overflow-x-auto overflow-y-auto flex-1 rounded-2xl theme-border custom-scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead class="text-xs uppercase tracking-widest font-black theme-muted">
-              <tr>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Dátum</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Rendszám</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Kilométer</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Leírás</th>
-              </tr>
-            </thead>
-            <tbody id="allSzervizHistoryList" class="text-sm">
-              <tr>
-                <td colspan="4" class="py-8 text-center theme-muted font-bold">Adatok betöltése...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
+      </div>
+      <div class="w-full overflow-x-auto rounded-2xl theme-border custom-scrollbar">
+        <table class="w-full text-left border-collapse whitespace-nowrap">
+          <thead class="text-xs uppercase tracking-widest font-black theme-muted">
+            <tr>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_date">Dátum</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_plate">Rendszám</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_km">Kilométer</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_desc">Leírás</th>
+            </tr>
+          </thead>
+          <tbody id="allSzervizHistoryList" class="text-sm"></tbody>
+        </table>
       </div>
     </div>
-    <div id="historyModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-6xl relative glass-panel max-h-[90vh] flex flex-col z-[60]">
+  </div>
+
+  <div id="historyModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div
+      class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-6xl relative glass-panel max-h-[90vh] flex flex-col z-[60]">
+      <div class="flex justify-between items-center mb-4">
+        <h4 class="font-bold text-lg sm:text-xl flex items-center gap-3 theme-text"><span>📋</span> <span
+            data-i18n="requests_history">Kérelmek és Előzmények</span></h4>
         <button onclick="closeModal('historyModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <div
-          class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b theme-border pb-4">
-          <h4 class="font-bold text-xl flex items-center gap-3 theme-text"><span>📋</span> Kérelmek és Előzmények
-          </h4>
-          <div class="flex items-center gap-3 theme-input p-2.5 rounded-xl"><label for="adminKerelmekSzuro"
-              class="text-xs theme-muted px-2 uppercase tracking-widest font-black">Szűrés Hónapra:</label><input
-              type="month" id="adminKerelmekSzuro" onchange="loadUtak()"
-              class="bg-transparent text-sm font-bold theme-text p-1 outline-none cursor-pointer"></div>
-        </div>
-        <div class="overflow-x-auto overflow-y-auto flex-1 rounded-2xl theme-border custom-scrollbar">
-          <table class="w-full text-left border-collapse">
-            <thead class="border-b theme-border text-xs uppercase tracking-widest font-black theme-muted">
-              <tr>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">ID</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Dátum</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Sofőr</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Jármű</th>
-                <th class="py-4 px-5 sticky top-0 bg-slate-900">Útvonal Részletek</th>
-                <th class="py-4 px-5 text-center sticky top-0 bg-slate-900">Állapot</th>
-                <th class="py-4 px-5 text-right sticky top-0 bg-slate-900">Művelet</th>
-              </tr>
-            </thead>
-            <tbody id="adminUtList" class="divide-y theme-border text-sm"></tbody>
-          </table>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
+      </div>
+      <div class="mb-6 border-b theme-border pb-4">
+        <div class="flex items-center gap-3 theme-input p-2.5 rounded-xl w-full sm:w-max">
+          <label for="adminKerelmekSzuro" class="text-xs theme-muted px-2 uppercase tracking-widest font-black shrink-0"
+            data-i18n="filter_month">Szűrés Hónapra:</label>
+          <input type="month" id="adminKerelmekSzuro" onchange="loadUtak()"
+            class="bg-transparent text-sm font-bold theme-text p-1 outline-none cursor-pointer flex-1">
         </div>
       </div>
-    </div>
-    <div id="editUserModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-sm relative glass-panel z-[70]"><button
-          onclick="closeModal('editUserModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>✏️</span> Fiók Módosítása</h4>
-        <form onsubmit="submitEditUser(event)" class="space-y-4"><input type="hidden" id="editUserId"><input type="text"
-            id="editUsername" readonly
-            class="theme-input rounded-xl p-3.5 w-full text-center tracking-widest font-mono cursor-not-allowed opacity-70">
-          <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">Új jelszó</label><input type="password"
-              id="editUserPassword" class="theme-input rounded-xl p-3.5 w-full font-medium" placeholder="Új jelszó">
-          </div>
-          <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">Jogosultság</label><select
-              id="editUserRole" class="theme-input rounded-xl p-3.5 w-full font-bold">
-              <option value="USER">SOFŐR JOGOSULTSÁG</option>
-              <option value="ADMIN">ADMIN JOGOSULTSÁG</option>
-            </select></div><button type="submit"
-            class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/30 mt-4 text-lg">Mentés</button>
-        </form>
+      <div class="w-full overflow-x-auto rounded-2xl theme-border custom-scrollbar">
+        <table class="w-full text-left border-collapse whitespace-nowrap">
+          <thead class="border-b theme-border text-xs uppercase tracking-widest font-black theme-muted">
+            <tr>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_id">ID</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_date">Dátum</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_driver">Sofőr</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_vehicle">Jármű</th>
+              <th class="py-4 px-5 sticky top-0 bg-slate-900" data-i18n="th_route_details">Útvonal Részletek</th>
+              <th class="py-4 px-5 text-center sticky top-0 bg-slate-900" data-i18n="th_status">Állapot</th>
+              <th class="py-4 px-5 text-right sticky top-0 bg-slate-900" data-i18n="th_actions">Művelet</th>
+            </tr>
+          </thead>
+          <tbody id="adminUtList" class="divide-y theme-border text-sm"></tbody>
+        </table>
       </div>
     </div>
-    <div id="editAutoModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-md relative glass-panel z-[70]"><button
-          onclick="closeModal('editAutoModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 class="font-bold mb-6 text-xl flex items-center gap-3 theme-text"><span>✏️</span> Autó Módosítása</h4>
-        <form onsubmit="submitEditAuto(event)" class="space-y-4"><input type="text" id="editRendszam" readonly
-            class="theme-input rounded-xl p-3.5 w-full text-center tracking-widest font-mono cursor-not-allowed opacity-70"><input
-            type="text" id="editTipus" required class="theme-input rounded-xl p-3.5 w-full font-medium"
-            placeholder="Autó típusa">
-          <div class="grid grid-cols-3 gap-3">
-            <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">ITP</label><input type="date"
-                id="editItp" class="theme-input rounded-xl p-2.5 w-full text-sm"></div>
-            <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">RCA</label><input type="date"
-                id="editRca" class="theme-input rounded-xl p-2.5 w-full text-sm"></div>
-            <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">Utadó</label><input type="date"
-                id="editRovinieta" class="theme-input rounded-xl p-2.5 w-full text-sm"></div>
-          </div><select id="editStatusz" class="theme-input rounded-xl p-3.5 w-full font-bold">
-            <option value="ELERHETO">ELÉRHETŐ</option>
-            <option value="FOGLALT">NEM ELÉRHETŐ</option>
-          </select><button type="submit"
-            class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/30 mt-4 text-lg">Mentés</button>
-        </form>
+  </div>
+
+  <div id="editUserModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-sm relative glass-panel z-[70]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl flex items-center gap-3 theme-text"><span>✏️</span> <span
+            data-i18n="edit_account">Fiók Módosítása</span></h4>
+        <button onclick="closeModal('editUserModal')"
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
       </div>
+      <form onsubmit="submitEditUser(event)" class="space-y-4">
+        <input type="hidden" id="editUserId">
+        <input type="text" id="editUsername" readonly
+          class="theme-input rounded-xl p-3.5 w-full text-center tracking-widest font-mono cursor-not-allowed opacity-70">
+        <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="new_password_label">Új
+            jelszó</label><input type="password" id="editUserPassword"
+            class="theme-input rounded-xl p-3.5 w-full font-medium" data-i18n="new_password" placeholder="Új jelszó">
+        </div>
+        <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="th_role">Jogosultság</label>
+          <select id="editUserRole" class="theme-input rounded-xl p-3.5 w-full font-bold">
+            <option value="USER" data-i18n="role_user">SOFŐR JOGOSULTSÁG</option>
+            <option value="ADMIN" data-i18n="role_admin">ADMIN JOGOSULTSÁG</option>
+          </select>
+        </div>
+        <button type="submit" data-i18n="save_btn"
+          class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/30 mt-4 text-lg">Mentés</button>
+      </form>
     </div>
-    <div id="szervizModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div
-        class="theme-card p-6 sm:p-8 rounded-3xl w-full max-w-lg relative flex flex-col max-h-[90vh] glass-panel z-[70]">
+  </div>
+
+  <div id="editAutoModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-md relative glass-panel z-[70]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 class="font-bold text-lg sm:text-xl flex items-center gap-3 theme-text"><span>✏️</span> <span
+            data-i18n="edit_car">Autó Módosítása</span></h4>
+        <button onclick="closeModal('editAutoModal')"
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
+      </div>
+      <form onsubmit="submitEditAuto(event)" class="space-y-4">
+        <input type="text" id="editRendszam" readonly
+          class="theme-input rounded-xl p-3.5 w-full text-center tracking-widest font-mono cursor-not-allowed opacity-70">
+        <input type="text" id="editTipus" required class="theme-input rounded-xl p-3.5 w-full font-medium"
+          data-i18n="car_type" placeholder="Autó típusa">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="itp_valid">ITP</label><input
+              type="date" id="editItp" class="theme-input rounded-xl p-2.5 w-full text-sm"></div>
+          <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="rca_valid">RCA</label><input
+              type="date" id="editRca" class="theme-input rounded-xl p-2.5 w-full text-sm"></div>
+          <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="road_tax">Utadó</label><input
+              type="date" id="editRovinieta" class="theme-input rounded-xl p-2.5 w-full text-sm"></div>
+        </div>
+        <select id="editStatusz" class="theme-input rounded-xl p-3.5 w-full font-bold">
+          <option value="ELERHETO" data-i18n="status_available">ELÉRHETŐ</option>
+          <option value="FOGLALT" data-i18n="status_unavailable">NEM ELÉRHETŐ</option>
+        </select>
+        <button type="submit" data-i18n="save_btn"
+          class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/30 mt-4 text-lg">Mentés</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="szervizModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div
+      class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-lg relative flex flex-col max-h-[90vh] glass-panel z-[70]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 id="szervizModalTitle" class="font-bold text-lg sm:text-xl flex items-center gap-3 theme-text">🛠️
+          Szerviztörténet</h4>
         <button onclick="closeModal('szervizModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 id="szervizModalTitle" class="font-bold mb-6 text-xl flex items-center gap-3 theme-text">🛠️
-          Szerviztörténet
-        </h4>
-        <div id="szervizLista"
-          class="flex-1 overflow-y-auto pr-2 mb-6 space-y-3 border-b theme-border pb-6 custom-scrollbar"></div>
-        <div class="bg-blue-500/5 p-6 rounded-2xl border border-blue-500/10">
-          <h5 class="text-xs font-black text-blue-500 mb-4 tracking-widest uppercase">Új bejegyzés rögzítése</h5>
-          <form onsubmit="submitSzerviz(event)" class="space-y-4"><input type="hidden" id="szervizAutoRendszam">
-            <div class="grid grid-cols-2 gap-4">
-              <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">Dátum</label><input type="date"
-                  id="ujSzervizDatum" required class="theme-input rounded-xl p-3 w-full text-sm"></div>
-              <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">Kilométer</label><input type="number"
-                  id="ujSzervizKm" placeholder="pl. 145000" required class="theme-input rounded-xl p-3 w-full text-sm">
-              </div>
-            </div>
-            <div><label class="text-[10px] theme-muted uppercase font-bold ml-1">Részletes Leírás</label><textarea
-                id="ujSzervizLeiras" required rows="2" placeholder="Olajcsere..."
-                class="theme-input rounded-xl p-3 w-full text-sm resize-none"></textarea></div><button type="submit"
-              class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-600/30">Mentés
-              a naplóba</button>
-          </form>
-        </div>
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
       </div>
-    </div>
-    <div id="lezarModal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4 transition-opacity">
-      <div class="theme-card p-8 rounded-3xl w-full max-w-sm relative glass-panel z-[70]"><button
-          onclick="closeModal('lezarModal')"
-          class="absolute top-5 right-5 theme-muted hover:text-red-500 font-black text-2xl leading-none">&times;</button>
-        <h4 id="lezarModalTitle" class="font-bold mb-6 text-xl text-emerald-500">⛽ Fuvar Lezárása</h4>
-        <form onsubmit="submitLezarUt(event)" class="space-y-5"><input type="hidden" id="lezarUtId">
-          <div><label class="text-xs theme-muted uppercase font-bold ml-1">Tankolás Költsége (RON)</label><input
-              type="number" step="0.01" id="lezarKoltseg" placeholder="0.00" required
-              class="theme-input rounded-xl p-4 w-full font-mono text-lg text-center"></div>
-          <div><label class="text-xs theme-muted uppercase font-bold ml-1">Fogyasztott (Liter)</label><input
-              type="number" step="0.1" id="lezarFogyasztas" placeholder="0.0" required
-              class="theme-input rounded-xl p-4 w-full font-mono text-lg text-center"></div>
-          <div><label class="text-xs theme-muted uppercase font-bold ml-1">Aktuális Kilométeróra
-              (km)</label><input type="number" id="lezarKm" placeholder="pl. 145000" required
-              class="theme-input rounded-xl p-4 w-full font-mono text-lg text-center"></div><button type="submit"
-            class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 mt-6 flex items-center justify-center gap-2 text-lg"><span>✔</span>
-            Rendszerben Rögzít</button>
+      <div id="szervizLista"
+        class="flex-1 overflow-y-auto pr-2 mb-6 space-y-3 border-b theme-border pb-6 custom-scrollbar"></div>
+      <div class="bg-blue-500/5 p-4 sm:p-6 rounded-2xl border border-blue-500/10">
+        <h5 class="text-xs font-black text-blue-500 mb-4 tracking-widest uppercase" data-i18n="new_service_record">Új
+          bejegyzés rögzítése</h5>
+        <form onsubmit="submitSzerviz(event)" class="space-y-4">
+          <input type="hidden" id="szervizAutoRendszam">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="th_date">Dátum</label><input
+                type="date" id="ujSzervizDatum" required class="theme-input rounded-xl p-3 w-full text-sm"></div>
+            <div><label class="text-[10px] theme-muted uppercase font-bold ml-1"
+                data-i18n="th_km">Kilométer</label><input type="number" id="ujSzervizKm" data-i18n="example_km"
+                placeholder="pl. 145000" required class="theme-input rounded-xl p-3 w-full text-sm"></div>
+          </div>
+          <div><label class="text-[10px] theme-muted uppercase font-bold ml-1" data-i18n="detailed_desc">Részletes
+              Leírás</label><textarea id="ujSzervizLeiras" required rows="2" data-i18n="example_desc"
+              placeholder="Olajcsere..." class="theme-input rounded-xl p-3 w-full text-sm resize-none"></textarea></div>
+          <button type="submit" data-i18n="save_to_log"
+            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-600/30">Mentés
+            a naplóba</button>
         </form>
       </div>
     </div>
+  </div>
 
-    <!-- ÚJ: Toast Notification Container -->
-    <div id="toastContainer" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none">
+  <div id="lezarModal"
+    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-2 sm:p-4 transition-opacity">
+    <div class="theme-card p-5 sm:p-8 rounded-3xl w-full max-w-sm relative glass-panel z-[70]">
+      <div class="flex justify-between items-center mb-6">
+        <h4 id="lezarModalTitle" class="font-bold text-lg sm:text-xl text-emerald-500">⛽ Fuvar Lezárása</h4>
+        <button onclick="closeModal('lezarModal')"
+          class="text-2xl theme-muted hover:text-red-500 font-black leading-none p-2 transition-colors shrink-0">&times;</button>
+      </div>
+      <form onsubmit="submitLezarUt(event)" class="space-y-5">
+        <input type="hidden" id="lezarUtId">
+        <div><label class="text-xs theme-muted uppercase font-bold ml-1" data-i18n="fuel_cost">Tankolás Költsége
+            (RON)</label><input type="number" step="0.01" id="lezarKoltseg" placeholder="0.00" required
+            class="theme-input rounded-xl p-4 w-full font-mono text-lg text-center"></div>
+        <div><label class="text-xs theme-muted uppercase font-bold ml-1" data-i18n="fuel_consumed">Fogyasztott
+            (Liter)</label><input type="number" step="0.1" id="lezarFogyasztas" placeholder="0.0" required
+            class="theme-input rounded-xl p-4 w-full font-mono text-lg text-center"></div>
+        <div><label class="text-xs theme-muted uppercase font-bold ml-1" data-i18n="current_km">Aktuális Kilométeróra
+            (km)</label><input type="number" id="lezarKm" data-i18n="example_km" placeholder="pl. 145000" required
+            class="theme-input rounded-xl p-4 w-full font-mono text-lg text-center"></div>
+        <button type="submit"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-500/30 mt-6 flex items-center justify-center gap-2 text-lg"><span>✔</span>
+          <span data-i18n="save_to_system">Rendszerben Rögzít</span></button>
+      </form>
     </div>
+  </div>
 
-    <!-- ÚJ: Lebegő Értesítő Gomb a Kliensnek (Lezáratlan fuvarok jelzése) -->
-    <button id="unclosedTripIndicator" onclick="toggleModalWithAnim('kliensHistoryModal')"
-      class="hidden fixed bottom-24 right-6 md:bottom-10 md:right-10 z-[90] bg-amber-500 text-white p-4 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.5)] animate-bounce transition-transform hover:scale-110 flex items-center justify-center">
-      <span class="text-2xl drop-shadow-md">🔔</span>
-      <span id="unclosedTripCount"
-        class="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-black w-6 h-6 flex items-center justify-center rounded-full border-2 border-slate-900 shadow-lg">1</span>
-    </button>
+  <!-- NYELVVÁLASZTÓ -->
+  <div class="lang-floating-btn">
+    <span style="font-size: 1.3rem; line-height: 1; pointer-events: none;">🌐</span>
+    <select id="langSelect" class="lang-select-native">
+      <option value="hu" class="text-slate-900">HUN</option>
+      <option value="en" class="text-slate-900">ENG</option>
+      <option value="ro" class="text-slate-900">ROM</option>
+    </select>
+    <span style="font-size: 0.7rem; margin-left: -5px; pointer-events: none;">▼</span>
+  </div>
 
-    <script src="js/api.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/ui.js"></script>
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
+
+  <button id="unclosedTripIndicator" onclick="toggleModalWithAnim('kliensHistoryModal')"
+    class="hidden fixed bottom-24 right-4 sm:right-6 md:bottom-10 md:right-10 z-[90] bg-amber-500 text-white p-3 sm:p-4 rounded-full shadow-[0_0_20px_rgba(245,158,11,0.5)] animate-bounce transition-transform hover:scale-110 flex items-center justify-center">
+    <span class="text-xl sm:text-2xl drop-shadow-md">🔔</span>
+    <span id="unclosedTripCount"
+      class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] sm:text-xs font-black w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center rounded-full border-2 border-slate-900 shadow-lg">1</span>
+  </button>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script type="module" src="js/ui.js"></script>
 </body>
 
 </html>

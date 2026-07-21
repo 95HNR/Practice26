@@ -1,3 +1,5 @@
+import { t, translateDynamic, initLanguageSwitcher } from './i18n.js';
+
 let startCoords = { lat: 0, lon: 0 };
 let endCoords = { lat: 0, lon: 0 };
 let debounceTimer = null;
@@ -11,19 +13,17 @@ window.currentRangsor = [];
 
 const socket = (typeof io !== 'undefined') ? io('http://localhost:3000') : null;
 
-// Rendszer Értesítések listája
 window.showNotification = function (msg) {
   const container = document.getElementById('alertContainer');
   if (!container) return;
   const note = document.createElement('div');
   note.className = "bg-white/5 border border-white/10 border-l-4 border-l-blue-500 p-4 rounded-xl shadow-sm fade-in font-bold flex items-center gap-3 transition-opacity duration-300 mb-3 text-white";
-  note.innerHTML = `<span class="text-2xl">🔔</span> <span>${msg}</span>`;
+  note.innerHTML = `<span class="text-2xl">🔔</span> <span>${translateDynamic(msg)}</span>`;
   container.prepend(note);
   setTimeout(() => { note.style.opacity = '0'; setTimeout(() => note.remove(), 300); }, 5000);
 };
 
 window.showToast = function (uzenet, tipus = 'info') {
-  // (Ide jön a már meglévő showToast kódod, az változatlan marad)
   const container = document.getElementById('toastContainer');
   if (!container) return;
   const toast = document.createElement('div');
@@ -34,8 +34,8 @@ window.showToast = function (uzenet, tipus = 'info') {
   else if (tipus === 'hiba') { bgClass = 'bg-red-500/90 border-red-400/50'; icon = '❌'; }
   else if (tipus === 'figyelmeztetes') { bgClass = 'bg-amber-500/90 border-amber-400/50'; icon = '⚠️'; }
 
-  toast.className = `${bgClass} text-white px-5 py-4 rounded-2xl shadow-2xl font-bold text-sm transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto flex items-center gap-3 border backdrop-blur-md`;
-  toast.innerHTML = `<span class="text-lg">${icon}</span> <span>${uzenet}</span>`;
+  toast.className = `${bgClass} text-white px-5 py-4 rounded-2xl shadow-2xl font-bold text-sm transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto flex items-center gap-3 border backdrop-blur-md z-[9999]`;
+  toast.innerHTML = `<span class="text-lg">${icon}</span> <span>${translateDynamic(uzenet)}</span>`;
 
   container.appendChild(toast);
   setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
@@ -45,7 +45,6 @@ window.showToast = function (uzenet, tipus = 'info') {
   }, 10000);
 };
 
-// OPTIMALIZÁLT: Villám Debouncer (200ms) a túlterhelés ellen
 let frissitesIdozito;
 if (socket) {
   socket.on('adat_frissites', () => {
@@ -54,7 +53,7 @@ if (socket) {
       if (window.AppState && window.AppState.user && window.AppState.user.role === 'ADMIN') {
         if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok();
         if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
-        if (typeof showToast === 'function') showToast("Adatok szinkronizálva!", "figyelmeztetes");
+        if (typeof showToast === 'function') showToast(t('data_synced'), "figyelmeztetes");
         if (typeof loadAuditLog === 'function') loadAuditLog();
         if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
         if (typeof renderDashboard === 'function') renderDashboard();
@@ -65,39 +64,38 @@ if (socket) {
         if (typeof loadUtak === 'function') loadUtak();
         if (typeof loadKliensElozmenyek === 'function') loadKliensElozmenyek();
       }
-    }, 200); // 200ms: Vizuálisan azonnali, de megfogja a hálózati spam-et
+    }, 200);
   });
 }
 
-// 1. MEGOLDÁS: Admin mobil menü javítva - az összes almenü látható letisztult kategóriákban
 window.toggleMobileMenu = function () {
   const menu = document.getElementById('mobileMenu');
   if (menu.classList.contains('hidden')) {
     menu.classList.remove('hidden');
     let menuHtml = `<button onclick="toggleMobileMenu()" class="absolute top-6 right-6 text-white p-3 bg-white/10 hover:bg-white/20 rounded-full transition z-50">❌</button>`;
-    menuHtml += `<button onclick="toggleTheme(); toggleMobileMenu()" class="text-white text-lg font-bold bg-white/10 border border-white/20 px-6 py-3 rounded-xl w-[85%] max-w-sm mt-4 shrink-0">🌓 Téma váltás</button>`;
+    menuHtml += `<button onclick="toggleTheme(); toggleMobileMenu()" class="text-white text-lg font-bold bg-white/10 border border-white/20 px-6 py-3 rounded-xl w-[85%] max-w-sm mt-4 shrink-0">🌓 ${t('nav_theme')}</button>`;
 
     if (window.AppState?.user?.role === 'ADMIN') {
       menuHtml += `
         <div class="w-[85%] max-w-sm flex flex-col gap-2 mt-4 pb-10">
-          <div class="text-emerald-400 font-black text-xs uppercase tracking-widest mb-1">Hozzáadás</div>
-          <button onclick="openModalWithAnim('addAutoModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">🚗 Új Autó</button>
-          <button onclick="openModalWithAnim('addUserModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">👤 Új Személyzet</button>
+          <div class="text-emerald-400 font-black text-xs uppercase tracking-widest mb-1">${t('nav_add')}</div>
+          <button onclick="openModalWithAnim('addAutoModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">🚗 ${t('nav_add_car')}</button>
+          <button onclick="openModalWithAnim('addUserModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">👤 ${t('nav_add_staff')}</button>
 
-          <div class="text-amber-400 font-black text-xs uppercase tracking-widest mt-4 mb-1">Módosítás</div>
-          <button onclick="openModalWithAnim('manageFleetModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">🚘 Autók Kezelése</button>
-          <button onclick="openModalWithAnim('manageStaffModal'); loadSzemelyzet(); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">👥 Fiókok Kezelése</button>
+          <div class="text-amber-400 font-black text-xs uppercase tracking-widest mt-4 mb-1">${t('nav_manage')}</div>
+          <button onclick="openModalWithAnim('manageFleetModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">🚘 ${t('nav_manage_car')}</button>
+          <button onclick="openModalWithAnim('manageStaffModal'); loadSzemelyzet(); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">👥 ${t('nav_manage_staff')}</button>
 
-          <div class="text-blue-400 font-black text-xs uppercase tracking-widest mt-4 mb-1">Előzmények</div>
-          <button onclick="openModalWithAnim('historyModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">📋 Fuvar Előzmények</button>
-          <button onclick="openModalWithAnim('allSzervizHistoryModal'); loadAllSzervizHistory(); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">🛠️ Szerviztörténet</button>
-          <button onclick="openModalWithAnim('auditModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">📝 Audit Napló</button>
+          <div class="text-blue-400 font-black text-xs uppercase tracking-widest mt-4 mb-1">${t('nav_history')}</div>
+          <button onclick="openModalWithAnim('historyModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">📋 ${t('nav_trip_history')}</button>
+          <button onclick="openModalWithAnim('allSzervizHistoryModal'); loadAllSzervizHistory(); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">🛠️ ${t('nav_service')}</button>
+          <button onclick="openModalWithAnim('auditModal'); toggleMobileMenu()" class="text-white text-left px-5 py-3.5 font-bold bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition w-full">📝 ${t('nav_audit')}</button>
         </div>`;
     } else {
-      menuHtml += `<button onclick="openModalWithAnim('kliensHistoryModal'); toggleMobileMenu()" class="text-emerald-400 text-xl font-bold bg-emerald-500/10 border border-emerald-500/20 px-8 py-4 rounded-xl w-[85%] max-w-sm mt-2">📋 Saját Előzményeim</button>`;
+      menuHtml += `<button onclick="openModalWithAnim('kliensHistoryModal'); toggleMobileMenu()" class="text-emerald-400 text-xl font-bold bg-emerald-500/10 border border-emerald-500/20 px-8 py-4 rounded-xl w-[85%] max-w-sm mt-2">📋 ${t('nav_my_history')}</button>`;
     }
 
-    menuHtml += `<button onclick="if(typeof logout === 'function') logout(); toggleMobileMenu();" class="text-red-400 text-lg font-bold bg-red-500/10 border border-red-500/20 px-8 py-4 rounded-xl w-[85%] max-w-sm mt-auto mb-6 shrink-0">Kijelentkezés</button>`;
+    menuHtml += `<button onclick="if(typeof logout === 'function') logout(); toggleMobileMenu();" class="text-red-400 text-lg font-bold bg-red-500/10 border border-red-500/20 px-8 py-4 rounded-xl w-[85%] max-w-sm mt-auto mb-6 shrink-0">${t('nav_logout')}</button>`;
     menu.innerHTML = menuHtml;
   } else {
     menu.classList.add('hidden');
@@ -118,7 +116,7 @@ window.initScrollReveal = function () {
   });
 };
 
-function toggleTheme() {
+window.toggleTheme = function () {
   const body = document.body;
   body.classList.toggle('light-theme');
   const isLight = body.classList.contains('light-theme');
@@ -136,6 +134,7 @@ function toggleTheme() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  initLanguageSwitcher();
   if (localStorage.getItem('drivecheck_theme') === 'light') document.body.classList.add('light-theme');
 });
 
@@ -175,7 +174,6 @@ window.openModalWithAnim = function (modalId) {
   if (card) card.classList.add('fade-in');
 };
 
-// --- EZT AZ ÚJ FÜGGVÉNYT ADD HOZZÁ ---
 window.toggleModalWithAnim = function (modalId) {
   const modal = document.getElementById(modalId);
   if (modal.classList.contains('hidden')) {
@@ -199,15 +197,15 @@ window.openEditModal = function (rendszam) {
 window.closeEditModal = function () { closeModal('editAutoModal'); };
 
 window.openSzervizModal = async function (rendszam) {
-  document.getElementById('szervizModalTitle').innerHTML = `🛠️ <span class="text-blue-400 font-mono tracking-widest">${rendszam}</span> Szerviztörténet`;
+  document.getElementById('szervizModalTitle').innerHTML = `🛠️ <span class="text-blue-400 font-mono tracking-widest">${rendszam}</span> ${t('service')}`;
   document.getElementById('szervizAutoRendszam').value = rendszam;
   const lista = document.getElementById('szervizLista');
-  lista.innerHTML = '<div class="text-center text-slate-400 py-8 font-bold animate-pulse">Adatok betöltése...</div>';
+  lista.innerHTML = `<div class="text-center text-slate-400 py-8 font-bold animate-pulse">${t('loading_data')}</div>`;
   openModalWithAnim('szervizModal');
   try {
     const szervizek = await API.fetchSzerviz(window.AppState.token, rendszam);
     if (!Array.isArray(szervizek) || szervizek.length === 0) {
-      lista.innerHTML = '<div class="text-center text-slate-400 text-sm py-8 font-bold">Még nincs rögzített szerviz.</div>';
+      lista.innerHTML = `<div class="text-center text-slate-400 text-sm py-8 font-bold">${t('no_service_record')}</div>`;
     } else {
       lista.innerHTML = szervizek.map(sz => `
         <div class="glass-panel p-5 transition hover:bg-white/5 mb-3">
@@ -215,16 +213,16 @@ window.openSzervizModal = async function (rendszam) {
             <span class="font-black text-blue-400 text-sm">🗓️ ${sz.datum.split('T')[0]}</span>
             <span class="text-xs bg-black/30 px-3 py-1 rounded-lg text-slate-300 border border-white/10 font-mono font-bold">${sz.kilometer} km</span>
           </div>
-          <div class="text-sm text-slate-300 mt-1 leading-relaxed">${sz.leiras}</div>
+          <div class="text-sm text-slate-300 mt-1 leading-relaxed">${translateDynamic(sz.leiras)}</div>
         </div>`).join('');
     }
-  } catch (e) { lista.innerHTML = '<div class="text-red-400 text-sm py-8 font-bold text-center">Hiba történt.</div>'; }
+  } catch (e) { lista.innerHTML = `<div class="text-red-400 text-sm py-8 font-bold text-center">${t('error_occurred')}</div>`; }
 };
 window.closeSzervizModal = function () { closeModal('szervizModal'); };
 
 window.openLezarModal = function (id, rendszam) {
   document.getElementById('lezarUtId').value = id;
-  document.getElementById('lezarModalTitle').innerHTML = `⛽ Fuvar Lezárása: <span class="text-emerald-400 font-mono">#${id}</span> (${rendszam})`;
+  document.getElementById('lezarModalTitle').innerHTML = `⛽ ${t('close_trip')}: <span class="text-emerald-400 font-mono">#${id}</span> (${rendszam})`;
   openModalWithAnim('lezarModal');
 };
 window.closeLezarModal = function () { closeModal('lezarModal'); };
@@ -252,11 +250,11 @@ window.submitLezarUt = async function (event) {
 
     if (!res.ok) {
       const err = await res.json();
-      alert(err.hiba || 'Hiba a lezárás során!');
+      alert(translateDynamic(err.hiba) || t('error_occurred'));
       return;
     }
 
-    if (typeof showToast === 'function') showToast('Fuvar lezárva, gépjármű újra elérhető!', 'siker');
+    if (typeof showToast === 'function') showToast(t('trip_closed_success'), 'siker');
     closeModal('lezarModal');
 
     const titleText = document.getElementById('lezarModalTitle').innerText;
@@ -273,7 +271,7 @@ window.submitLezarUt = async function (event) {
     if (typeof loadKliensElozmenyek === 'function') loadKliensElozmenyek();
 
   } catch (e) {
-    alert('Hálózati hiba történt a lezárás során.');
+    alert(t('error_occurred'));
   }
 };
 
@@ -292,10 +290,11 @@ window.renderUI = async function () {
 
   document.getElementById('loginSection').classList.add('hidden');
   document.getElementById('userInfo').classList.remove('hidden');
-  document.getElementById('welcomeText').textContent = `Üdvözlünk, ${currentUser.username}!`;
+
+  document.getElementById('welcomeText').textContent = t('welcome_user').replace('{x}', currentUser.username);
 
   const badge = document.getElementById('roleBadge');
-  badge.textContent = currentUser.role;
+  badge.textContent = t(currentUser.role === 'ADMIN' ? 'role_admin' : 'role_user');
   badge.className = currentUser.role === 'ADMIN'
     ? "px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-500 border border-amber-500/30 mt-1"
     : "px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-400 border border-blue-500/30 mt-1";
@@ -304,13 +303,11 @@ window.renderUI = async function () {
     document.body.classList.add('admin-mode');
     document.getElementById('adminSection').classList.remove('hidden');
     document.getElementById('adminSection').classList.add('fade-in');
+    document.getElementById('kliensSection').classList.add('hidden');
 
     if (document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.remove('hidden');
     if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.remove('hidden');
     if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.remove('hidden');
-
-    // Kliens gomb elrejtése adminnak
-    if (document.getElementById('userHistoryBtn')) document.getElementById('userHistoryBtn').classList.add('hidden');
 
     if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok();
     if (typeof loadAktivFlotta === 'function') loadAktivFlotta();
@@ -318,20 +315,20 @@ window.renderUI = async function () {
     if (typeof loadAuditLog === 'function') loadAuditLog();
     if (typeof loadBeerkezoList === 'function') loadBeerkezoList();
     if (typeof loadFlottaStatisztika === 'function') loadFlottaStatisztika();
+
   } else {
     document.body.classList.remove('admin-mode');
     document.getElementById('adminSection').classList.add('hidden');
+    document.getElementById('kliensSection').classList.remove('hidden');
+    document.getElementById('kliensSection').classList.add('fade-in');
 
     if (document.getElementById('adminAddMenu')) document.getElementById('adminAddMenu').classList.add('hidden');
     if (document.getElementById('adminHistoryMenu')) document.getElementById('adminHistoryMenu').classList.add('hidden');
     if (document.getElementById('adminManageMenu')) document.getElementById('adminManageMenu').classList.add('hidden');
 
-    // 2. MEGOLDÁS: Saját Előzményeim gomb megjelenítése a USER számára
     if (document.getElementById('userHistoryBtn')) document.getElementById('userHistoryBtn').classList.remove('hidden');
   }
 
-  document.getElementById('kliensSection').classList.remove('hidden');
-  document.getElementById('kliensSection').classList.add('fade-in');
   resetDistanceField(true, true);
   const datumInput = document.getElementById('utDatum');
   if (datumInput && !datumInput.value) datumInput.value = new Date().toISOString().split('T')[0];
@@ -339,6 +336,27 @@ window.renderUI = async function () {
   if (typeof loadAutok === 'function') loadAutok();
   if (typeof loadUtak === 'function') loadUtak();
   if (typeof loadKliensElozmenyek === 'function') loadKliensElozmenyek();
+};
+
+window.reRenderDynamicLanguage = function () {
+  if (!window.AppState || !window.AppState.token) return;
+
+  renderUI();
+
+  if (document.getElementById('manageStaffModal') && !document.getElementById('manageStaffModal').classList.contains('hidden')) loadSzemelyzet();
+  if (document.getElementById('allSzervizHistoryModal') && !document.getElementById('allSzervizHistoryModal').classList.contains('hidden')) loadAllSzervizHistory();
+  if (document.getElementById('allFlottaModal') && !document.getElementById('allFlottaModal').classList.contains('hidden')) openAllFlottaModal();
+  if (document.getElementById('allRangsorModal') && !document.getElementById('allRangsorModal').classList.contains('hidden')) openAllRangsorModal();
+  if (document.getElementById('allAlertsModal') && !document.getElementById('allAlertsModal').classList.contains('hidden')) openAllAlertsModal();
+  if (document.getElementById('allRequestsModal') && !document.getElementById('allRequestsModal').classList.contains('hidden')) openAllRequestsModal();
+  if (document.getElementById('historyModal') && !document.getElementById('historyModal').classList.contains('hidden')) loadUtak();
+  if (document.getElementById('auditModal') && !document.getElementById('auditModal').classList.contains('hidden')) loadAuditLog();
+
+  const mobileMenu = document.getElementById('mobileMenu');
+  if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+    mobileMenu.classList.add('hidden');
+    toggleMobileMenu();
+  }
 };
 
 window.resetDistanceField = function (resetStart = true, resetEnd = true) {
@@ -361,7 +379,7 @@ window.searchOSM = function (inputEl, dropdownId) {
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=hu`);
       const results = await res.json();
       if (results.length === 0) {
-        dropdown.innerHTML = `<div class="p-5 text-sm text-slate-400 text-center font-bold">Nincs találat a térképen</div>`;
+        dropdown.innerHTML = `<div class="p-5 text-sm text-slate-400 text-center font-bold">${t('no_map_result')}</div>`;
         return dropdown.classList.remove('hidden');
       }
       dropdown.innerHTML = results.map(item => `
@@ -382,7 +400,7 @@ window.selectLocation = async function (inputId, dropdownId, locationName, lat, 
 
   if (startCoords.lat !== 0 && endCoords.lat !== 0) {
     const tavInput = document.getElementById('utTav');
-    tavInput.value = 'Tervezés folyamatban...';
+    tavInput.value = t('planning_in_progress');
     try {
       const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${startCoords.lon},${startCoords.lat};${endCoords.lon},${endCoords.lat}?overview=false`);
       const data = await res.json();
@@ -390,11 +408,11 @@ window.selectLocation = async function (inputId, dropdownId, locationName, lat, 
         tavInput.value = (data.routes[0].distance / 1000).toFixed(1) + ' km';
         tavInput.classList.add('border-emerald-500', 'text-emerald-400');
       }
-    } catch (e) { tavInput.value = 'Hiba a tervezéskor!'; }
+    } catch (e) { tavInput.value = t('planning_error'); }
   }
 };
 
-function formatDateStr(isoStr) { return isoStr ? isoStr.split('T')[0] : 'Nincs adat'; }
+function formatDateStr(isoStr) { return isoStr ? isoStr.split('T')[0] : t('no_data'); }
 
 window.generateAktivFlottaHtml = function (u) {
   return `
@@ -402,10 +420,10 @@ window.generateAktivFlottaHtml = function (u) {
       <div class="flex justify-between items-start">
         <div class="font-black text-white flex items-center gap-2">🚘 <span class="font-mono text-blue-400 text-sm tracking-widest">${u.auto_rendszam}</span></div>
         <span class="flex items-center gap-1 text-[9px] bg-blue-500/20 text-blue-400 border border-blue-500/50 px-2 py-1 rounded-md tracking-widest font-black uppercase">
-          <div class="w-1 h-1 rounded-full bg-blue-400 animate-pulse"></div> ÚTON
+          <div class="w-1 h-1 rounded-full bg-blue-400 animate-pulse"></div> ${t('on_road')}
         </span>
       </div>
-      <div class="text-[11px] text-slate-400 font-bold">👤 Sofőr: <span class="text-white">${u.sofor_nev}</span></div>
+      <div class="text-[11px] text-slate-400 font-bold">👤 ${t('driver')}: <span class="text-white">${u.sofor_nev}</span></div>
       <div class="bg-black/20 p-2.5 rounded-xl border border-white/5 text-[10px] text-slate-300 flex flex-col gap-1 font-medium">
         <span class="truncate" title="${u.indulas}">${u.indulas.split(',')[0]}</span> 
         <span class="text-blue-400 text-center leading-none">⬇</span> 
@@ -438,7 +456,7 @@ window.loadAktivFlotta = async function () {
     if (!Array.isArray(aktivUtak) || aktivUtak.length === 0) {
       container.innerHTML = `
         <div class="h-full flex items-center justify-center border border-dashed border-slate-500/40 rounded-[20px] p-4">
-          <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Nincs autó úton</span>
+          <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">${t('no_car_on_road')}</span>
         </div>`;
       initScrollReveal();
       return;
@@ -451,12 +469,12 @@ window.loadAktivFlotta = async function () {
     html += toShow.map(u => `
       <div class="glass-panel p-3 text-xs flex justify-between items-center transition hover:bg-white/5">
         <span class="font-mono font-bold text-blue-400">${u.auto_rendszam}</span>
-        <span class="text-[10px] bg-blue-500/20 px-2 py-0.5 rounded text-blue-400 font-bold tracking-wider">Úton</span>
+        <span class="text-[10px] bg-blue-500/20 px-2 py-0.5 rounded text-blue-400 font-bold tracking-wider">${t('on_road')}</span>
       </div>`).join('');
 
     if (aktivUtak.length > MAX_ITEMS) {
       const extraCount = aktivUtak.length - MAX_ITEMS;
-      html += `<button onclick="openAllFlottaModal()" class="w-full py-2 mt-1 shrink-0 text-[11px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">+ További ${extraCount} jármű</button>`;
+      html += `<button onclick="openAllFlottaModal()" class="w-full py-2 mt-1 shrink-0 text-[11px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">${t('more_vehicles').replace('{x}', extraCount)}</button>`;
     }
     container.innerHTML = html;
     initScrollReveal();
@@ -468,7 +486,7 @@ window.generateRangsorHtml = function (rendszam, data) {
     <div class="bg-white/5 border border-white/10 rounded-[16px] flex flex-col p-3 transition hover:bg-white/10 mb-2 shrink-0">
       <div class="flex justify-between items-center mb-1">
         <span class="font-mono font-black text-emerald-400 tracking-widest text-sm">${rendszam}</span>
-        <span class="text-[9px] bg-white/10 text-slate-300 px-2 py-1 rounded-md font-bold uppercase">${data.db} fuvar</span>
+        <span class="text-[9px] bg-white/10 text-slate-300 px-2 py-1 rounded-md font-bold uppercase">${data.db} ${t('trips_count')}</span>
       </div>
       <div class="flex items-end gap-1">
         <span class="font-black text-white text-lg">${data.km.toFixed(1)}</span>
@@ -500,7 +518,7 @@ window.loadFlottaStatisztika = async function () {
     }
 
     if (sortedStats.length === 0) {
-      container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Még nincs adat.</div>`;
+      container.innerHTML = `<div class="text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">${t('no_data_yet')}</div>`;
       return;
     }
 
@@ -516,7 +534,7 @@ window.loadFlottaStatisztika = async function () {
 
     if (sortedStats.length > MAX_ITEMS) {
       const extraCount = sortedStats.length - MAX_ITEMS;
-      html += `<button onclick="openAllRangsorModal()" class="w-full py-2 mt-1 shrink-0 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition border border-emerald-500/20">+ További ${extraCount} autó</button>`;
+      html += `<button onclick="openAllRangsorModal()" class="w-full py-2 mt-1 shrink-0 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition border border-emerald-500/20">${t('more_cars').replace('{x}', extraCount)}</button>`;
     }
 
     container.innerHTML = html;
@@ -524,10 +542,11 @@ window.loadFlottaStatisztika = async function () {
 };
 
 window.generateAlertHtml = function (r) {
-  const isWarning = r.includes('⚠️');
+  const trAlert = translateDynamic(r);
+  const isWarning = trAlert.includes('⚠️');
   return `<div class="bg-white/5 border border-white/10 py-2.5 px-4 rounded-xl reveal active border-l-4 ${isWarning ? 'border-l-amber-500 bg-amber-500/10' : 'border-l-red-500 bg-red-500/10'} flex gap-3 items-start shadow-sm shrink-0">
             <span class="text-lg leading-none mt-0.5">${isWarning ? '⚠️' : '🚨'}</span> 
-            <span class="text-[13px] font-black leading-snug text-white">${r.replace('⚠️ ', '').replace('🚨 ', '')}</span>
+            <span class="text-[13px] font-black leading-snug text-white">${trAlert.replace('⚠️ ', '').replace('🚨 ', '')}</span>
           </div>`;
 };
 
@@ -570,11 +589,11 @@ window.loadRiasztasok = async function () {
 
       if (riasztasok.length > MAX_ITEMS) {
         const extraCount = riasztasok.length - MAX_ITEMS;
-        html += `<button onclick="openAllAlertsModal()" class="w-full py-2 mt-2 shrink-0 text-xs font-bold text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl transition border border-amber-500/20">+ További ${extraCount} értesítés mutatása</button>`;
+        html += `<button onclick="openAllAlertsModal()" class="w-full py-2 mt-2 shrink-0 text-xs font-bold text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl transition border border-amber-500/20">${t('more_alerts').replace('{x}', extraCount)}</button>`;
       }
       container.innerHTML = html;
     } else {
-      container.innerHTML = `<div class="text-center py-6 text-emerald-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">✅ Nincs aktív riasztás.</div>`;
+      container.innerHTML = `<div class="text-center py-6 text-emerald-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">${t('no_active_alerts')}</div>`;
     }
   } catch (e) { console.error(e); }
 };
@@ -601,11 +620,11 @@ window.generateRequestHtml = function (f) {
             <div class="flex gap-2.5 mt-auto">
                <button onclick="biralUtFizikai(${f.id}, 'JOVAHAGYOTT')" 
                        class="flex-1 req-btn-approve font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">
-                 ✔ JÓVÁHAGY
+                 ✔ ${t('approve')}
                </button>
                <button onclick="biralUtFizikai(${f.id}, 'ELUTASITOTT')" 
                        class="flex-1 req-btn-reject font-black py-2 rounded-lg text-[11px] uppercase tracking-wider transition shadow-sm border-none">
-                 ✖ ELUTASÍT
+                 ✖ ${t('reject')}
                </button>
             </div>
           </div>`;
@@ -633,7 +652,7 @@ window.loadBeerkezoList = async function () {
     }
 
     if (!Array.isArray(fuvarok) || fuvarok.length === 0) {
-      container.innerHTML = `<div class="col-span-full text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">Jelenleg nincs kérelem.</div>`;
+      container.innerHTML = `<div class="col-span-full text-center py-4 text-slate-400 text-xs font-bold glass-panel border border-dashed border-white/10 rounded-2xl">${t('no_requests')}</div>`;
       initScrollReveal();
       return;
     }
@@ -645,7 +664,7 @@ window.loadBeerkezoList = async function () {
 
     if (fuvarok.length > MAX_ITEMS) {
       const extraCount = fuvarok.length - MAX_ITEMS;
-      html += `<button onclick="openAllRequestsModal()" class="col-span-full w-full py-2 shrink-0 text-[10px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">+ További ${extraCount} kérelem mutatása</button>`;
+      html += `<button onclick="openAllRequestsModal()" class="col-span-full w-full py-2 shrink-0 text-[10px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20">${t('more_requests').replace('{x}', extraCount)}</button>`;
     }
     container.innerHTML = html;
     initScrollReveal();
@@ -672,8 +691,8 @@ window.loadAutok = async function () {
       const emptyHtml = `
         <div class="col-span-full py-12 flex flex-col items-center justify-center bg-white/5 backdrop-blur-md border-2 border-dashed border-white/10 rounded-3xl">
           <div class="text-5xl mb-4 opacity-40">🚘</div>
-          <p class="font-black text-white text-lg tracking-tight">A járműpark üres</p>
-          <p class="text-slate-400 text-sm mt-2 font-medium">Nincs regisztrált autó a rendszerben.</p>
+          <p class="font-black text-white text-lg tracking-tight">${t('fleet_empty')}</p>
+          <p class="text-slate-400 text-sm mt-2 font-medium">${t('no_registered_cars')}</p>
         </div>`;
       if (autoListContainer) autoListContainer.innerHTML = emptyHtml;
       if (adminAutoListContainer) adminAutoListContainer.innerHTML = emptyHtml;
@@ -690,14 +709,14 @@ window.loadAutok = async function () {
             </div>
             <span class="flex items-center gap-1.5 text-[10px] px-3 py-1.5 rounded-full font-black tracking-widest ${a.statusz === 'ELERHETO' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}">
               <div class="w-1.5 h-1.5 rounded-full ${a.statusz === 'ELERHETO' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}"></div>
-              ${a.statusz === 'ELERHETO' ? 'ELÉRHETŐ' : 'NEM ELÉRHETŐ'}
+              ${a.statusz === 'ELERHETO' ? t('status_available') : t('status_unavailable')}
             </span>
           </div>
           
           <div class="grid grid-cols-3 gap-2 bg-slate-900/50 border border-white/5 p-4 rounded-xl text-center mb-5">
-            <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">ITP</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.itp)}</span></div>
-            <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">RCA</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.rca)}</span></div>
-            <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">Utadó</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.rovinieta)}</span></div>
+            <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">${t('itp_short')}</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.itp)}</span></div>
+            <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">${t('rca_short')}</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.rca)}</span></div>
+            <div class="flex flex-col"><span class="block text-slate-400 text-[11px] font-black mb-1.5 uppercase tracking-wider">${t('road_tax_short')}</span> <span class="font-mono text-white text-sm font-bold">${formatDateStr(a.rovinieta)}</span></div>
           </div>
           
           <div class="mt-auto w-full bg-slate-900/60 border border-white/5 rounded-full py-3 px-4 flex justify-center items-center gap-3 shadow-inner">
@@ -707,8 +726,8 @@ window.loadAutok = async function () {
 
         const adminBtns = `
           <div class="flex gap-2 pt-4 border-t border-white/10 mt-4">
-            <button onclick="openSzervizModal('${a.rendszam}')" class="bg-white/5 hover:bg-white/10 border border-white/10 flex-1 text-white text-xs py-3 rounded-xl font-black flex items-center justify-center gap-1 transition">🛠️ Szerviz</button>
-            <button onclick="openEditModal('${a.rendszam}')" class="bg-white/5 hover:bg-white/10 border border-white/10 flex-1 text-white text-xs py-3 rounded-xl font-black flex items-center justify-center gap-1 transition">✏️ Módosít</button>
+            <button onclick="openSzervizModal('${a.rendszam}')" class="bg-white/5 hover:bg-white/10 border border-white/10 flex-1 text-white text-xs py-3 rounded-xl font-black flex items-center justify-center gap-1 transition">🛠️ ${t('service')}</button>
+            <button onclick="openEditModal('${a.rendszam}')" class="bg-white/5 hover:bg-white/10 border border-white/10 flex-1 text-white text-xs py-3 rounded-xl font-black flex items-center justify-center gap-1 transition">✏️ ${t('modify')}</button>
             <button onclick="deleteAutoAction('${a.rendszam}')" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 text-xs px-4 py-3 rounded-xl font-black flex items-center justify-center transition">🗑️</button>
           </div>`;
 
@@ -726,8 +745,8 @@ window.loadAutok = async function () {
     if (rendszamSelect && currentUser.role === 'USER') {
       const elerhetoAutok = autok.filter(a => a.elerhetoAFormDatumon);
       const jelenlegiKivalasztott = rendszamSelect.value;
-      let opciok = '<option value="">-- Válassz a szabad autók közül --</option>';
-      if (elerhetoAutok.length === 0) opciok = '<option value="">-- Nincs szabad autó erre a napra --</option>';
+      let opciok = `<option value="">${t('select_car_default')}</option>`;
+      if (elerhetoAutok.length === 0) opciok = `<option value="">${t('no_free_car')}</option>`;
       else opciok += elerhetoAutok.map(a => `<option value="${a.rendszam}">${a.rendszam} (${a.tipus})</option>`).join('');
       if (rendszamSelect.innerHTML !== opciok) {
         rendszamSelect.innerHTML = opciok;
@@ -745,27 +764,27 @@ window.loadSzemelyzet = async function () {
   try {
     const res = await fetch('http://localhost:3000/api/admin/users', { headers: { 'Authorization': `Bearer ${window.AppState.token}` } });
     if (!res.ok) {
-      container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-red-400 font-bold">Hiba történt a felhasználók lekérésekor.</td></tr>';
+      container.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-red-400 font-bold">${t('error_fetching_users')}</td></tr>`;
       return;
     }
     const users = await res.json();
     if (users.length === 0) {
-      container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-slate-400 font-bold">Nincsenek felhasználók.</td></tr>';
+      container.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 font-bold">${t('no_users')}</td></tr>`;
       return;
     }
     container.innerHTML = users.map(u => `
       <tr class="border-b border-white/5 hover:bg-white/5">
         <td class="py-4 px-5 text-slate-400 text-xs font-mono">#${u.id}</td>
         <td class="py-4 px-5 font-black text-white">${u.username}</td>
-        <td class="py-4 px-5"><span class="px-2 py-1 text-[10px] uppercase tracking-widest font-black rounded-lg ${u.role === 'ADMIN' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}">${u.role}</span></td>
+        <td class="py-4 px-5"><span class="px-2 py-1 text-[10px] uppercase tracking-widest font-black rounded-lg ${u.role === 'ADMIN' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}">${t(u.role === 'ADMIN' ? 'role_admin' : 'role_user')}</span></td>
         <td class="py-4 px-5 text-right flex justify-end gap-2">
-           <button onclick="openEditUserModal(${u.id}, '${u.username}', '${u.role}')" class="glass-btn bg-amber-500/20 text-amber-400 hover:bg-amber-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">✏️ Módosít</button>
-           <button onclick="deleteUserAction(${u.id}, '${u.username}')" class="glass-btn bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">🗑️ Törlés</button>
+           <button onclick="openEditUserModal(${u.id}, '${u.username}', '${u.role}')" class="glass-btn bg-amber-500/20 text-amber-400 hover:bg-amber-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">✏️ ${t('modify')}</button>
+           <button onclick="deleteUserAction(${u.id}, '${u.username}')" class="glass-btn bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">🗑️ ${t('delete')}</button>
         </td>
       </tr>
     `).join('');
   } catch (e) {
-    container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-red-400 font-bold">Hálózati hiba a felhasználók betöltésekor.</td></tr>';
+    container.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-red-400 font-bold">${t('error_fetching_users')}</td></tr>`;
   }
 };
 
@@ -794,18 +813,18 @@ window.submitEditUser = async function (event) {
     });
     if (!res.ok) {
       const err = await res.json();
-      alert(err.hiba || 'Hiba a módosítás során.');
+      alert(translateDynamic(err.hiba) || t('error_modifying'));
       return;
     }
-    showNotification('Fiók sikeresen frissítve!');
+    showNotification(t('account_updated'));
     closeModal('editUserModal');
     loadSzemelyzet();
     if (typeof loadAuditLog === 'function') loadAuditLog();
-  } catch (e) { alert('Hálózati hiba történt.'); }
+  } catch (e) { alert(t('network_error')); }
 };
 
 window.deleteUserAction = async function (id, username) {
-  if (!confirm(`Biztosan véglegesen törölni szeretnéd a(z) ${username} fiókot?`)) return;
+  if (!confirm(t('confirm_delete_user').replace('{x}', username))) return;
   try {
     const res = await fetch(`http://localhost:3000/api/admin/users/${id}`, {
       method: 'DELETE',
@@ -813,13 +832,13 @@ window.deleteUserAction = async function (id, username) {
     });
     if (!res.ok) {
       const err = await res.json();
-      alert(err.hiba || 'Hiba történt a törlés során.');
+      alert(translateDynamic(err.hiba) || t('error_deleting'));
       return;
     }
-    showNotification(`A(z) ${username} fiók sikeresen törölve!`);
+    showNotification(t('account_deleted').replace('{x}', username));
     loadSzemelyzet();
     if (typeof loadAuditLog === 'function') loadAuditLog();
-  } catch (e) { alert('Hálózati hiba történt.'); }
+  } catch (e) { alert(t('network_error')); }
 };
 
 window.loadUtak = async function () {
@@ -832,15 +851,15 @@ window.loadUtak = async function () {
 
     let htmlContent = '';
     if (utak.length === 0) {
-      htmlContent = '<tr><td colspan="7" class="py-8 text-center text-slate-400 text-sm font-bold">Nincs megjeleníthető adat.</td></tr>';
+      htmlContent = `<tr><td colspan="7" class="py-8 text-center text-slate-400 text-sm font-bold">${t('no_data_to_display')}</td></tr>`;
     } else {
       htmlContent = utak.map((u, i) => {
         let gombHTML = '<span class="text-slate-400 font-bold">-</span>';
         if (currentUser.role === 'ADMIN' && u.status === 'BEERKEZO') {
           gombHTML = `
             <div class="flex justify-end gap-2">
-              <button onclick="biralUtFizikai(${u.id}, 'JOVAHAGYOTT')" class="glass-btn bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">✔ Jóváhagy</button>
-              <button onclick="biralUtFizikai(${u.id}, 'ELUTASITOTT')" class="glass-btn bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">✖ Elvet</button>
+              <button onclick="biralUtFizikai(${u.id}, 'JOVAHAGYOTT')" class="glass-btn bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">✔ ${t('approve')}</button>
+              <button onclick="biralUtFizikai(${u.id}, 'ELUTASITOTT')" class="glass-btn bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1.5 rounded-lg text-xs font-bold">✖ ${t('reject')}</button>
             </div>`;
         }
 
@@ -850,27 +869,34 @@ window.loadUtak = async function () {
         if (u.status === 'ELUTASITOTT') { statusStyle = 'bg-red-500/20 text-red-400 border-red-500/30'; statusDot = 'bg-red-400'; }
         if (u.status === 'TELJESITVE') { statusStyle = 'bg-blue-500/20 text-blue-400 border-blue-500/30'; statusDot = 'bg-blue-400'; }
 
+        // STÁTUSZ FORDÍTÁSI LOGIKA:
+        let translatedStatus = u.status;
+        if (u.status === 'BEERKEZO') translatedStatus = t('status_pending') || 'BEÉRKEZŐ';
+        else if (u.status === 'JOVAHAGYOTT') translatedStatus = t('status_approved') || 'JÓVÁHAGYOTT';
+        else if (u.status === 'ELUTASITOTT') translatedStatus = t('status_rejected') || 'ELUTASÍTOTT';
+        else if (u.status === 'TELJESITVE') translatedStatus = t('status_completed') || 'TELJESÍTVE';
+
         return `
           <tr class="border-b border-white/5 transition-colors fade-in hover:bg-white/5" style="animation-delay: ${i * 30}ms">
-            <td class="py-4 px-4 text-slate-400 font-mono text-xs font-bold">#${u.id}</td>
+            <td class="py-4 px-4 text-slate-400 font-mono text-xs font-bold whitespace-nowrap">#${u.id}</td>
             <td class="py-4 px-4 text-white font-bold text-sm whitespace-nowrap">${u.honap_ev}</td>
-            <td class="py-4 px-4 font-black text-white text-base">${u.sofor_nev}</td>
-            <td class="py-4 px-4"><span class="theme-input px-2.5 py-1 rounded-md text-xs font-mono font-bold text-blue-400">${u.auto_rendszam}</span></td>
-            <td class="py-4 px-4 text-white text-xs font-medium">
+            <td class="py-4 px-4 font-black text-white text-base whitespace-nowrap">${u.sofor_nev}</td>
+            <td class="py-4 px-4 whitespace-nowrap"><span class="theme-input px-2.5 py-1 rounded-md text-xs font-mono font-bold text-blue-400">${u.auto_rendszam}</span></td>
+            <td class="py-4 px-4 text-white text-xs font-medium whitespace-nowrap">
               <div class="flex items-center gap-2 mb-1.5">
                  <span class="truncate max-w-[120px]" title="${u.indulas}">${u.indulas.split(',')[0]}</span> 
                  <span class="text-blue-400 font-bold">➔</span> 
                  <span class="truncate max-w-[120px]" title="${u.erkezes}">${u.erkezes.split(',')[0]}</span>
                  <span class="text-emerald-400 font-black ml-2">${u.tavolsag} km</span>
               </div>
-              <span class="text-[10px] text-slate-400 font-bold">Költség: ${u.koltseg} RON | Fogy.: ${u.fogyasztas} L</span>
+              <span class="text-[10px] text-slate-400 font-bold">${t('cost_label')}: ${u.koltseg} RON | ${t('consumption_label')}: ${u.fogyasztas} L</span>
             </td>
-            <td class="py-4 px-4 text-center">
+            <td class="py-4 px-4 text-center whitespace-nowrap">
                <span class="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-md font-black tracking-widest border ${statusStyle}">
-                 <div class="w-1.5 h-1.5 rounded-full ${statusDot}"></div> ${u.status}
+                 <div class="w-1.5 h-1.5 rounded-full ${statusDot}"></div> ${translatedStatus}
                </span>
             </td>
-            <td class="py-4 px-4 align-middle">${gombHTML}</td>
+            <td class="py-4 px-4 align-middle whitespace-nowrap">${gombHTML}</td>
           </tr>`;
       }).join('');
     }
@@ -879,8 +905,6 @@ window.loadUtak = async function () {
   } catch (e) { }
 };
 
-// 3. MEGOLDÁS: Kliens előzményeinek mobilbarát (kártyás) listája a dedikált modálba + Dátum Szűrés + Csengő + DOM Optimalizálás
-// Az alapértelmezett showAll = false, így elsőre csak 15 elemet tölt be
 window.loadKliensElozmenyek = async function (showAll = false) {
   const token = window.AppState.token;
   const currentUser = window.AppState.user;
@@ -914,13 +938,12 @@ window.loadKliensElozmenyek = async function (showAll = false) {
 
     if (!Array.isArray(megjelenitendoUtak) || megjelenitendoUtak.length === 0) {
       if (szuroValue !== '') {
-        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold bg-white/5 border border-dashed border-white/10 rounded-2xl">Nincs a megadott dátumnak megfelelő fuvar.</div>`;
+        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold bg-white/5 border border-dashed border-white/10 rounded-2xl">${t('no_trip_for_date')}</div>`;
       } else {
-        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold bg-white/5 border border-dashed border-white/10 rounded-2xl">Még nincsenek fuvarjaid a rendszerben.</div>`;
+        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm font-bold bg-white/5 border border-dashed border-white/10 rounded-2xl">${t('no_trips_yet')}</div>`;
       }
     } else {
 
-      // OPTIMALIZÁLT: Lista limitálása 15 elemre, ha nincs szűrés és nincs kinyitva az összes
       const MAX_ITEMS = 15;
       const limitList = (!showAll && szuroValue === '') ? megjelenitendoUtak.slice(0, MAX_ITEMS) : megjelenitendoUtak;
 
@@ -930,16 +953,23 @@ window.loadKliensElozmenyek = async function (showAll = false) {
             (u.status === 'TELJESITVE' ? 'text-blue-400 bg-blue-500/20 border border-blue-500/30' :
               'text-amber-400 bg-amber-500/20 border border-amber-500/30'));
 
+        // STÁTUSZ FORDÍTÁSI LOGIKA (Kliensnek is)
+        let translatedStatus = u.status;
+        if (u.status === 'BEERKEZO') translatedStatus = t('status_pending') || 'BEÉRKEZŐ';
+        else if (u.status === 'JOVAHAGYOTT') translatedStatus = t('status_approved') || 'JÓVÁHAGYOTT';
+        else if (u.status === 'ELUTASITOTT') translatedStatus = t('status_rejected') || 'ELUTASÍTOTT';
+        else if (u.status === 'TELJESITVE') translatedStatus = t('status_completed') || 'TELJESÍTVE';
+
         let gombHTML = '';
         if (u.status === 'JOVAHAGYOTT') {
-          gombHTML = `<button onclick="openLezarModal(${u.id}, '${u.auto_rendszam}')" class="mt-3 w-full bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 border border-blue-500/30 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-sm">⛽ Fuvar Lezárása</button>`;
+          gombHTML = `<button onclick="openLezarModal(${u.id}, '${u.auto_rendszam}')" class="mt-3 w-full bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 border border-blue-500/30 py-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 shadow-sm">⛽ ${t('close_trip')}</button>`;
         }
 
         return `
         <div class="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col gap-3 transition hover:bg-white/10 mb-3 shadow-sm shrink-0">
           <div class="flex justify-between items-center">
             <span class="font-mono font-black text-white text-lg tracking-widest">${u.auto_rendszam}</span>
-            <span class="text-[10px] px-3 py-1.5 rounded font-black tracking-widest uppercase ${statuszClass}">${u.status}</span>
+            <span class="text-[10px] px-3 py-1.5 rounded font-black tracking-widest uppercase ${statuszClass}">${translatedStatus}</span>
           </div>
           <div class="text-sm text-slate-300 font-bold flex flex-col gap-2 mt-2 bg-slate-900/40 p-3 rounded-xl border border-white/5">
             <span class="truncate flex items-center gap-2"><span class="text-lg leading-none">📍</span> ${u.indulas.split(',')[0]}</span>
@@ -954,10 +984,9 @@ window.loadKliensElozmenyek = async function (showAll = false) {
         </div>`;
       }).join('');
 
-      // Ha vannak még elemek, beteszünk egy gombot, ami a showAll = true paraméterrel hívja meg újra magát
       if (!showAll && szuroValue === '' && megjelenitendoUtak.length > MAX_ITEMS) {
         const remaining = megjelenitendoUtak.length - MAX_ITEMS;
-        html += `<button onclick="loadKliensElozmenyek(true)" class="w-full py-4 mt-2 mb-4 shrink-0 text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20 shadow-sm">⬇ További ${remaining} korábbi fuvar betöltése</button>`;
+        html += `<button onclick="loadKliensElozmenyek(true)" class="w-full py-4 mt-2 mb-4 shrink-0 text-xs font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 rounded-xl transition border border-blue-500/20 shadow-sm">${t('load_more_trips').replace('{x}', remaining)}</button>`;
       }
 
       container.innerHTML = html;
@@ -978,14 +1007,14 @@ window.loadKliensElozmenyek = async function (showAll = false) {
 };
 
 window.downloadAdvancedJelentes = function (event) {
-  const e = event || window.event; let btn = e ? e.currentTarget : null; let originalText = "📥 CSV";
-  if (btn) { originalText = btn.innerHTML; btn.innerHTML = "⏳..."; btn.disabled = true; btn.classList.add('opacity-70', 'cursor-not-allowed'); }
+  const e = event || window.event; let btn = e ? e.currentTarget : null; let originalText = btn ? btn.innerHTML : "📥 CSV";
+  if (btn) { btn.innerHTML = "⏳..."; btn.disabled = true; btn.classList.add('opacity-70', 'cursor-not-allowed'); }
   const type = document.getElementById('periodusTipus').value;
   const start = document.getElementById('dateStart').value; const end = document.getElementById('dateEnd').value;
   const resetBtn = () => { if (btn) { btn.innerHTML = originalText; btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-not-allowed'); } };
 
-  if (type !== 'ev' && !start) { alert("Kérlek válassz egy induló dátumot!"); resetBtn(); return; }
-  if (type === 'intervallum' && !end) { alert("Kérlek válassz egy végdátumot is!"); resetBtn(); return; }
+  if (type !== 'ev' && !start) { alert(t('alert_select_start_date')); resetBtn(); return; }
+  if (type === 'intervallum' && !end) { alert(t('alert_select_end_date')); resetBtn(); return; }
 
   let periodus = start;
   if (type === 'honap') periodus = start.substring(0, 7);
@@ -997,14 +1026,14 @@ window.downloadAdvancedJelentes = function (event) {
 };
 
 window.downloadExcelJelentes = function (event) {
-  const e = event || window.event; let btn = e ? e.currentTarget : null; let originalText = "📊 Excel";
-  if (btn) { originalText = btn.innerHTML; btn.innerHTML = "⏳..."; btn.disabled = true; btn.classList.add('opacity-70', 'cursor-not-allowed'); }
+  const e = event || window.event; let btn = e ? e.currentTarget : null; let originalText = btn ? btn.innerHTML : "📊 Excel";
+  if (btn) { btn.innerHTML = "⏳..."; btn.disabled = true; btn.classList.add('opacity-70', 'cursor-not-allowed'); }
   const type = document.getElementById('periodusTipus').value;
   const start = document.getElementById('dateStart').value; const end = document.getElementById('dateEnd').value;
   const resetBtn = () => { if (btn) { btn.innerHTML = originalText; btn.disabled = false; btn.classList.remove('opacity-70', 'cursor-not-allowed'); } };
 
-  if (type !== 'ev' && !start) { alert("Kérlek válassz egy induló dátumot!"); resetBtn(); return; }
-  if (type === 'intervallum' && !end) { alert("Kérlek válassz egy végdátumot is!"); resetBtn(); return; }
+  if (type !== 'ev' && !start) { alert(t('alert_select_start_date')); resetBtn(); return; }
+  if (type === 'intervallum' && !end) { alert(t('alert_select_end_date')); resetBtn(); return; }
 
   let periodus = start;
   if (type === 'honap') periodus = start.substring(0, 7);
@@ -1039,17 +1068,17 @@ window.addAuto = async function (event) {
 
     if (!res.ok) {
       const error = await res.json();
-      alert("Hiba az autó hozzáadásakor: " + (error.hiba || "Ellenőrizd az adatokat!"));
+      alert(t('error_adding_car') + (translateDynamic(error.hiba) || t('check_data')));
       return;
     }
 
-    if (typeof showToast === 'function') showToast("Autó sikeresen hozzáadva a flottához!", "siker");
+    if (typeof showToast === 'function') showToast(t('car_added_success'), "siker");
     event.target.reset();
     closeModal('addAutoModal');
     if (typeof loadAutok === 'function') loadAutok();
     if (typeof window.loadRiasztasok === 'function') window.loadRiasztasok();
   } catch (e) {
-    console.error(e); alert("Hálózati hiba történt.");
+    console.error(e); alert(t('network_error'));
   }
 };
 
@@ -1076,7 +1105,7 @@ window.renderDashboard = async function () {
         type: 'line',
         data: {
           labels: labels,
-          datasets: [{ label: 'Havi Költség (RON)', data: data, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)', borderWidth: 4, pointBackgroundColor: '#2563eb', pointBorderColor: '#ffffff', pointRadius: 6, fill: true, tension: 0.4 }]
+          datasets: [{ label: t('monthly_cost'), data: data, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)', borderWidth: 4, pointBackgroundColor: '#2563eb', pointBorderColor: '#ffffff', pointRadius: 6, fill: true, tension: 0.4 }]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
@@ -1098,15 +1127,15 @@ window.loadAuditLog = async function () {
   try {
     const logs = await API.fetchAudit(token);
     if (!Array.isArray(logs) || logs.length === 0) {
-      container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-slate-400 font-bold">Még nincsenek bejegyzések az audit naplóban.</td></tr>';
+      container.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 font-bold">${t('no_audit_logs')}</td></tr>`;
       return;
     }
     container.innerHTML = logs.map((l, index) => `
       <tr class="transition-all duration-300 fade-in border-b border-white/5 hover:bg-white/5" style="animation-delay: ${index * 50}ms">
-        <td class="py-5 px-6 text-[11px] text-slate-400 font-mono font-black">${new Date(l.datum).toLocaleString()}</td>
-        <td class="py-5 px-6 font-black text-white text-sm">${l.felhasznalo}</td>
-        <td class="py-5 px-6 text-blue-400 font-black text-[10px] tracking-widest uppercase">${l.muvelet}</td>
-        <td class="py-5 px-6 text-white text-sm font-medium">${l.reszletek}</td>
+        <td class="py-5 px-6 text-[11px] text-slate-400 font-mono font-black whitespace-nowrap">${new Date(l.datum).toLocaleString()}</td>
+        <td class="py-5 px-6 font-black text-white text-sm whitespace-nowrap">${l.felhasznalo}</td>
+        <td class="py-5 px-6 text-blue-400 font-black text-[10px] tracking-widest uppercase whitespace-nowrap">${translateDynamic(l.muvelet)}</td>
+        <td class="py-5 px-6 text-white text-sm font-medium min-w-[300px] whitespace-nowrap">${translateDynamic(l.reszletek)}</td>
       </tr>`).join('');
   } catch (e) { console.error(e); }
 };
@@ -1123,25 +1152,25 @@ window.loadAllSzervizHistory = async function () {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
-    if (!res.ok) throw new Error('Hiba a lekéréskor');
+    if (!res.ok) throw new Error(t('fetch_error'));
     const szervizek = await res.json();
 
     if (!Array.isArray(szervizek) || szervizek.length === 0) {
-      container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-slate-400 font-bold">Nincsenek rögzített szervizbejegyzések a rendszerben.</td></tr>';
+      container.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 font-bold">${t('no_service_logs')}</td></tr>`;
       return;
     }
 
     container.innerHTML = szervizek.map((sz, index) => `
       <tr class="transition-all duration-300 fade-in border-b border-white/5 hover:bg-white/5" style="animation-delay: ${index * 30}ms">
-        <td class="py-5 px-5 text-[11px] text-slate-400 font-mono font-black">${sz.datum ? sz.datum.split('T')[0] : '-'}</td>
-        <td class="py-5 px-5 font-black text-blue-400 font-mono tracking-widest">${sz.auto_rendszam || sz.rendszam || 'Ismeretlen'}</td>
-        <td class="py-5 px-5 font-bold text-white">${sz.kilometer} km</td>
-        <td class="py-5 px-5 text-white text-sm font-medium">${sz.leiras}</td>
+        <td class="py-5 px-5 text-[11px] text-slate-400 font-mono font-black whitespace-nowrap">${sz.datum ? sz.datum.split('T')[0] : '-'}</td>
+        <td class="py-5 px-5 font-black text-blue-400 font-mono tracking-widest whitespace-nowrap">${sz.auto_rendszam || sz.rendszam || 'Ismeretlen'}</td>
+        <td class="py-5 px-5 font-bold text-white whitespace-nowrap">${sz.kilometer} km</td>
+        <td class="py-5 px-5 text-white text-sm font-medium min-w-[200px] whitespace-nowrap">${translateDynamic(sz.leiras)}</td>
       </tr>`).join('');
 
   } catch (e) {
     console.error(e);
-    container.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-red-400 font-bold">Hiba történt a szerviztörténet betöltésekor.</td></tr>';
+    container.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-red-400 font-bold">${t('error_loading_service')}</td></tr>`;
   }
 };
 
